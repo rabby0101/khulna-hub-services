@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -10,13 +10,17 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
 import Header from '@/components/Header';
 import JobCard from '@/components/JobCard';
+import ProposalDialog from '@/components/ProposalDialog';
+import { supabase } from '@/integrations/supabase/client';
 
 const Category = () => {
   const { category } = useParams<{ category: string }>();
   const { data: jobs, isLoading } = useJobs();
   const { user } = useAuth();
+  const [selectedJob, setSelectedJob] = useState<any>(null);
+  const [proposalDialogOpen, setProposalDialogOpen] = useState(false);
 
-  const handleSendProposal = (jobId: string) => {
+  const handleSendProposal = async (jobId: string) => {
     if (!user) {
       toast({
         title: "Please sign in",
@@ -25,11 +29,28 @@ const Category = () => {
       });
       return;
     }
-    
-    toast({
-      title: "Feature coming soon!",
-      description: "Proposal system will be implemented next",
-    });
+
+    // Check if user is a service provider
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('user_type')
+      .eq('id', user.id)
+      .single();
+
+    if (!profile || (profile.user_type !== 'provider' && profile.user_type !== 'both')) {
+      toast({
+        title: "Service Provider Required",
+        description: "You need to be a service provider to send proposals. Enable it in your profile.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const job = jobs?.find(j => j.id === jobId);
+    if (job) {
+      setSelectedJob(job);
+      setProposalDialogOpen(true);
+    }
   };
 
   const categoryJobs = jobs?.filter(job => 
@@ -88,6 +109,17 @@ const Category = () => {
               <Link to="/post-job">Post a Job</Link>
             </Button>
           </div>
+        )}
+
+        {selectedJob && (
+          <ProposalDialog
+            open={proposalDialogOpen}
+            onOpenChange={setProposalDialogOpen}
+            jobId={selectedJob.id}
+            jobTitle={selectedJob.title}
+            budgetMin={selectedJob.budget_min}
+            budgetMax={selectedJob.budget_max}
+          />
         )}
       </div>
     </div>

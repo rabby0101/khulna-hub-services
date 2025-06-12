@@ -38,14 +38,24 @@ const Header = () => {
             Browse Jobs
           </Link>
           {user && (
-            <Link 
-              to="/profile" 
-              className={`text-sm font-medium transition-colors hover:text-primary ${
-                location.pathname === '/profile' ? 'text-primary' : 'text-muted-foreground'
-              }`}
-            >
-              Profile
-            </Link>
+            <>
+              <Link 
+                to="/my-jobs" 
+                className={`text-sm font-medium transition-colors hover:text-primary ${
+                  location.pathname === '/my-jobs' ? 'text-primary' : 'text-muted-foreground'
+                }`}
+              >
+                My Jobs
+              </Link>
+              <Link 
+                to="/profile" 
+                className={`text-sm font-medium transition-colors hover:text-primary ${
+                  location.pathname === '/profile' ? 'text-primary' : 'text-muted-foreground'
+                }`}
+              >
+                Profile
+              </Link>
+            </>
           )}
         </nav>
 
