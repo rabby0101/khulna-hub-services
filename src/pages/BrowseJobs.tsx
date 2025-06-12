@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -8,12 +8,16 @@ import { useJobs } from '@/hooks/useJobs';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
 import Header from '@/components/Header';
+import ProposalDialog from '@/components/ProposalDialog';
+import { supabase } from '@/integrations/supabase/client';
 
 const BrowseJobs = () => {
   const { data: jobs, isLoading, error } = useJobs();
   const { user } = useAuth();
+  const [selectedJob, setSelectedJob] = useState<any>(null);
+  const [proposalDialogOpen, setProposalDialogOpen] = useState(false);
 
-  const handleSendProposal = (jobId: string) => {
+  const handleSendProposal = async (jobId: string) => {
     if (!user) {
       toast({
         title: "Please sign in",
@@ -22,12 +26,28 @@ const BrowseJobs = () => {
       });
       return;
     }
-    
-    // For now, just show a toast - this would open a proposal modal
-    toast({
-      title: "Feature coming soon!",
-      description: "Proposal system will be implemented next",
-    });
+
+    // Check if user is a service provider
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('user_type')
+      .eq('id', user.id)
+      .single();
+
+    if (!profile || (profile.user_type !== 'provider' && profile.user_type !== 'both')) {
+      toast({
+        title: "Service Provider Required",
+        description: "You need to be a service provider to send proposals. Enable it in your profile.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const job = jobs?.find(j => j.id === jobId);
+    if (job) {
+      setSelectedJob(job);
+      setProposalDialogOpen(true);
+    }
   };
 
   if (isLoading) {
@@ -119,6 +139,17 @@ const BrowseJobs = () => {
             <h3 className="text-xl font-semibold text-foreground mb-2">No jobs available</h3>
             <p className="text-muted-foreground">Check back later for new opportunities!</p>
           </div>
+        )}
+
+        {selectedJob && (
+          <ProposalDialog
+            open={proposalDialogOpen}
+            onOpenChange={setProposalDialogOpen}
+            jobId={selectedJob.id}
+            jobTitle={selectedJob.title}
+            budgetMin={selectedJob.budget_min}
+            budgetMax={selectedJob.budget_max}
+          />
         )}
       </div>
     </div>
