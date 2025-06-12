@@ -7,7 +7,8 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { User, MapPin, Phone, Mail, Edit, Save } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { User, MapPin, Phone, Mail, Edit, Save, Briefcase } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
@@ -20,7 +21,7 @@ interface Profile {
   phone: string | null;
   location: string | null;
   avatar_url: string | null;
-  user_type: string | null;
+  user_type: 'seeker' | 'provider' | 'both' | null;
 }
 
 const Profile = () => {
@@ -88,6 +89,24 @@ const Profile = () => {
     }
   };
 
+  const handleServiceProviderToggle = (checked: boolean) => {
+    if (!profile) return;
+    
+    let newUserType: 'seeker' | 'provider' | 'both';
+    
+    if (checked) {
+      // If turning on service provider
+      newUserType = profile.user_type === 'seeker' ? 'both' : 'provider';
+    } else {
+      // If turning off service provider
+      newUserType = profile.user_type === 'both' ? 'seeker' : 'seeker';
+    }
+    
+    setProfile(prev => prev ? { ...prev, user_type: newUserType } : null);
+  };
+
+  const isServiceProvider = profile?.user_type === 'provider' || profile?.user_type === 'both';
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background">
@@ -131,8 +150,37 @@ const Profile = () => {
                   </Avatar>
                   <div>
                     <h3 className="text-xl font-semibold">{profile?.full_name || 'Anonymous User'}</h3>
-                    <Badge variant="secondary">{profile?.user_type || 'seeker'}</Badge>
+                    <div className="flex gap-2 mt-1">
+                      <Badge variant="secondary">{profile?.user_type || 'seeker'}</Badge>
+                      {isServiceProvider && (
+                        <Badge variant="default" className="bg-blue-500">
+                          <Briefcase className="h-3 w-3 mr-1" />
+                          Service Provider
+                        </Badge>
+                      )}
+                    </div>
                   </div>
+                </div>
+
+                {/* Service Provider Toggle */}
+                <div className="flex items-center justify-between p-4 border rounded-lg">
+                  <div className="flex items-center space-x-3">
+                    <Briefcase className="h-5 w-5 text-blue-500" />
+                    <div>
+                      <Label htmlFor="service-provider" className="text-sm font-medium">
+                        Become a Service Provider
+                      </Label>
+                      <p className="text-xs text-muted-foreground">
+                        Enable this to send proposals to jobs
+                      </p>
+                    </div>
+                  </div>
+                  <Switch
+                    id="service-provider"
+                    checked={isServiceProvider}
+                    onCheckedChange={handleServiceProviderToggle}
+                    disabled={!isEditing}
+                  />
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -191,6 +239,12 @@ const Profile = () => {
                     <span className="text-muted-foreground">Jobs Completed</span>
                     <span className="font-semibold">0</span>
                   </div>
+                  {isServiceProvider && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Proposals Sent</span>
+                      <span className="font-semibold">0</span>
+                    </div>
+                  )}
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Rating</span>
                     <span className="font-semibold">⭐ N/A</span>

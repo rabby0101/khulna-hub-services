@@ -39,7 +39,7 @@ export const useJobs = () => {
 
       if (jobsWithProfiles && !profileError) {
         console.log('Jobs with profiles:', jobsWithProfiles);
-        return jobsWithProfiles as Job[];
+        return jobsWithProfiles;
       }
 
       // If that fails, get jobs without profile data
