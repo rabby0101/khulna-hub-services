@@ -31,11 +31,12 @@ const NotificationCenter = () => {
 
     // Navigate based on notification type and related data
     if (notification.related_job_id) {
-      if (notification.type === 'proposal_received') {
-        // Navigate to My Jobs page where they can manage proposals
-        navigate('/my-jobs');
-      } else if (notification.type === 'proposal_accepted' || notification.type === 'proposal_rejected') {
-        // For now, navigate to My Jobs page - could be enhanced to show specific job details
+      if (notification.type === 'proposal_received' || 
+          notification.type === 'proposal_accepted' || 
+          notification.type === 'proposal_rejected' ||
+          notification.type === 'deal_created' ||
+          notification.type === 'deal_completed') {
+        // Navigate to My Jobs page where they can manage proposals and deals
         navigate('/my-jobs');
       }
     }
@@ -53,6 +54,12 @@ const NotificationCenter = () => {
         return '✅';
       case 'proposal_rejected':
         return '❌';
+      case 'deal_created':
+        return '🤝';
+      case 'deal_completed':
+        return '🎉';
+      case 'counter_proposal':
+        return '🔄';
       default:
         return '📢';
     }

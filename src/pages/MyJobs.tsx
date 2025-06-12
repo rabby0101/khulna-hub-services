@@ -7,10 +7,13 @@ import Header from '@/components/Header';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import ProposalManager from '@/components/ProposalManager';
+import DealManager from '@/components/DealManager';
 import { useJobProposals } from '@/hooks/useProposals';
+import { useMyDeals } from '@/hooks/useDeals';
 
 const MyJobs = () => {
   const { user } = useAuth();
+  const { data: deals = [] } = useMyDeals();
 
   const { data: myJobs, isLoading } = useQuery({
     queryKey: ['my-jobs'],
@@ -55,20 +58,68 @@ const MyJobs = () => {
     <div className="min-h-screen bg-background">
       <Header />
       <div className="container mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold text-foreground mb-8">My Jobs</h1>
+        <h1 className="text-3xl font-bold text-foreground mb-8">My Jobs & Deals</h1>
         
-        {myJobs?.length === 0 ? (
-          <div className="text-center py-12">
-            <h3 className="text-xl font-semibold text-foreground mb-2">No jobs posted yet</h3>
-            <p className="text-muted-foreground">Start by posting your first job!</p>
-          </div>
-        ) : (
-          <div className="space-y-6">
-            {myJobs?.map((job) => (
-              <JobWithProposals key={job.id} job={job} />
-            ))}
-          </div>
-        )}
+        <Tabs defaultValue="active-deals" className="w-full">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="active-deals">
+              Active Deals ({deals.filter(d => d.status === 'active').length})
+            </TabsTrigger>
+            <TabsTrigger value="job-proposals">
+              Job Proposals ({myJobs?.length || 0})
+            </TabsTrigger>
+            <TabsTrigger value="completed-deals">
+              Completed ({deals.filter(d => d.status === 'completed').length})
+            </TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="active-deals" className="mt-6">
+            <DealManager />
+          </TabsContent>
+          
+          <TabsContent value="job-proposals" className="mt-6">
+            {myJobs?.length === 0 ? (
+              <div className="text-center py-12">
+                <h3 className="text-xl font-semibold text-foreground mb-2">No jobs posted yet</h3>
+                <p className="text-muted-foreground">Start by posting your first job!</p>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {myJobs?.map((job) => (
+                  <JobWithProposals key={job.id} job={job} />
+                ))}
+              </div>
+            )}
+          </TabsContent>
+          
+          <TabsContent value="completed-deals" className="mt-6">
+            <div className="space-y-4">
+              {deals.filter(d => d.status === 'completed').map((deal) => (
+                <Card key={deal.id}>
+                  <CardHeader>
+                    <CardTitle className="flex justify-between items-center">
+                      <span>{deal.jobs?.title}</span>
+                      <span className="text-green-600 text-sm">Completed</span>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-muted-foreground">
+                      Final Amount: ৳{deal.agreed_amount}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      Completed: {deal.completed_at && new Date(deal.completed_at).toLocaleDateString()}
+                    </p>
+                  </CardContent>
+                </Card>
+              ))}
+              {deals.filter(d => d.status === 'completed').length === 0 && (
+                <div className="text-center py-8">
+                  <p className="text-muted-foreground">No completed deals yet.</p>
+                </div>
+              )}
+            </div>
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );

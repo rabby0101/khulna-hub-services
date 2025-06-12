@@ -10,6 +10,19 @@ export const useAcceptProposal = () => {
     mutationFn: async (proposalId: string) => {
       console.log('Accepting proposal:', proposalId);
       
+      // Get proposal details to create deal
+      const { data: proposal, error: proposalError } = await supabase
+        .from('proposals')
+        .select('*, jobs(*)')
+        .eq('id', proposalId)
+        .single();
+      
+      if (proposalError) {
+        console.error('Error fetching proposal:', proposalError);
+        throw proposalError;
+      }
+      
+      // Update proposal status to accepted
       const { error } = await supabase
         .from('proposals')
         .update({ status: 'accepted' })
@@ -19,13 +32,43 @@ export const useAcceptProposal = () => {
         console.error('Error accepting proposal:', error);
         throw error;
       }
+
+      // Create a deal record
+      const { error: dealError } = await supabase
+        .from('deals')
+        .insert({
+          job_id: proposal.job_id,
+          client_id: proposal.jobs.client_id,
+          provider_id: proposal.provider_id,
+          proposal_id: proposalId,
+          agreed_amount: proposal.amount,
+          status: 'active'
+        });
+
+      if (dealError) {
+        console.error('Error creating deal:', dealError);
+        throw dealError;
+      }
+
+      // Update job status to in_progress
+      const { error: jobError } = await supabase
+        .from('jobs')
+        .update({ status: 'in_progress' })
+        .eq('id', proposal.job_id);
+
+      if (jobError) {
+        console.error('Error updating job status:', jobError);
+        throw jobError;
+      }
     },
     onSuccess: () => {
       toast({
         title: "Proposal Accepted!",
-        description: "You have successfully accepted the proposal",
+        description: "A deal has been created. You can now manage the project progress.",
       });
       queryClient.invalidateQueries({ queryKey: ['proposals'] });
+      queryClient.invalidateQueries({ queryKey: ['deals'] });
+      queryClient.invalidateQueries({ queryKey: ['my-jobs'] });
     }
   });
 };
@@ -117,6 +160,36 @@ export const useCounterProposal = () => {
         description: "Your counter proposal has been sent to the provider",
       });
       queryClient.invalidateQueries({ queryKey: ['proposals'] });
+    }
+  });
+};
+
+export const useMarkDealCompleted = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (dealId: string) => {
+      console.log('Marking deal as completed:', dealId);
+      
+      const { error } = await supabase
+        .from('deals')
+        .update({ 
+          status: 'completed',
+          completed_at: new Date().toISOString()
+        })
+        .eq('id', dealId);
+      
+      if (error) {
+        console.error('Error completing deal:', error);
+        throw error;
+      }
+    },
+    onSuccess: () => {
+      toast({
+        title: "Deal Completed!",
+        description: "The project has been marked as completed. Payment can now be processed.",
+      });
+      queryClient.invalidateQueries({ queryKey: ['deals'] });
     }
   });
 };
