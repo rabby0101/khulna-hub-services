@@ -47,6 +47,71 @@ export type Database = {
           },
         ]
       }
+      deals: {
+        Row: {
+          agreed_amount: number
+          client_id: string
+          completed_at: string | null
+          created_at: string
+          id: string
+          job_id: string
+          proposal_id: string
+          provider_id: string
+          status: string
+        }
+        Insert: {
+          agreed_amount: number
+          client_id: string
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          job_id: string
+          proposal_id: string
+          provider_id: string
+          status?: string
+        }
+        Update: {
+          agreed_amount?: number
+          client_id?: string
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          job_id?: string
+          proposal_id?: string
+          provider_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deals_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deals_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deals_proposal_id_fkey"
+            columns: ["proposal_id"]
+            isOneToOne: false
+            referencedRelation: "proposals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deals_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       jobs: {
         Row: {
           budget_max: number

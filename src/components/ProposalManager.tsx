@@ -5,44 +5,44 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
-import { 
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter
-} from '@/components/ui/dialog';
-import { Clock, DollarSign, User, MessageSquare, ArrowRight } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Separator } from '@/components/ui/separator';
 import { useAcceptProposal, useRejectProposal, useCounterProposal } from '@/hooks/useProposalActions';
 import { formatDistanceToNow } from 'date-fns';
 
+interface Proposal {
+  id: string;
+  job_id: string;
+  provider_id: string;
+  amount: number;
+  message: string | null;
+  status: string;
+  created_at: string;
+  profiles?: {
+    full_name: string;
+    user_type: string;
+  };
+}
+
 interface ProposalManagerProps {
-  proposals: any[];
+  proposals: Proposal[];
   jobTitle: string;
   originalBudgetMin: number;
   originalBudgetMax: number;
 }
 
-const ProposalManager = ({ proposals, jobTitle, originalBudgetMin, originalBudgetMax }: ProposalManagerProps) => {
-  const [counterDialogOpen, setCounterDialogOpen] = useState(false);
-  const [selectedProposal, setSelectedProposal] = useState<any>(null);
-  const [counterAmount, setCounterAmount] = useState('');
-  const [counterMessage, setCounterMessage] = useState('');
-
+const ProposalManager: React.FC<ProposalManagerProps> = ({ 
+  proposals, 
+  jobTitle, 
+  originalBudgetMin, 
+  originalBudgetMax 
+}) => {
   const acceptProposal = useAcceptProposal();
   const rejectProposal = useRejectProposal();
   const counterProposal = useCounterProposal();
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'accepted': return 'bg-green-100 text-green-800 border-green-200';
-      case 'rejected': return 'bg-red-100 text-red-800 border-red-200';
-      case 'countered': return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'pending': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      default: return 'bg-gray-100 text-gray-800 border-gray-200';
-    }
-  };
+  const [counterAmount, setCounterAmount] = useState<number>(0);
+  const [counterMessage, setCounterMessage] = useState('');
+  const [selectedProposal, setSelectedProposal] = useState<string | null>(null);
 
   const handleAccept = (proposalId: string) => {
     acceptProposal.mutate(proposalId);
@@ -52,154 +52,177 @@ const ProposalManager = ({ proposals, jobTitle, originalBudgetMin, originalBudge
     rejectProposal.mutate(proposalId);
   };
 
-  const handleCounter = (proposal: any) => {
-    setSelectedProposal(proposal);
-    setCounterAmount('');
-    setCounterMessage('');
-    setCounterDialogOpen(true);
+  const handleCounter = (proposalId: string) => {
+    if (counterAmount > 0) {
+      counterProposal.mutate({
+        proposalId,
+        newAmount: counterAmount,
+        message: counterMessage
+      });
+      setCounterAmount(0);
+      setCounterMessage('');
+      setSelectedProposal(null);
+    }
   };
 
-  const submitCounter = () => {
-    if (!selectedProposal || !counterAmount) return;
-
-    const amount = parseInt(counterAmount);
-    if (amount < originalBudgetMin || amount > originalBudgetMax) {
-      return;
+  // Group proposals by provider to show chains
+  const proposalChains = proposals.reduce((chains: { [key: string]: Proposal[] }, proposal) => {
+    const key = proposal.provider_id;
+    if (!chains[key]) {
+      chains[key] = [];
     }
+    chains[key].push(proposal);
+    return chains;
+  }, {});
 
-    counterProposal.mutate({
-      proposalId: selectedProposal.id,
-      newAmount: amount,
-      message: counterMessage
-    });
+  // Sort each chain by creation date
+  Object.keys(proposalChains).forEach(providerId => {
+    proposalChains[providerId].sort((a, b) => 
+      new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+    );
+  });
 
-    setCounterDialogOpen(false);
-    setSelectedProposal(null);
+  const getStatusBadgeVariant = (status: string) => {
+    switch (status) {
+      case 'accepted': return 'default';
+      case 'rejected': return 'destructive';
+      case 'countered': return 'secondary';
+      default: return 'outline';
+    }
   };
 
-  // Group proposals by provider to show conversation chains
-  const proposalsByProvider = proposals.reduce((acc, proposal) => {
-    const providerId = proposal.provider_id;
-    if (!acc[providerId]) {
-      acc[providerId] = [];
-    }
-    acc[providerId].push(proposal);
-    return acc;
-  }, {} as Record<string, any[]>);
+  const pendingProposalsCount = proposals.filter(p => p.status === 'pending').length;
+  const acceptedProposalsCount = proposals.filter(p => p.status === 'accepted').length;
 
-  if (proposals.length === 0) {
+  if (!proposals || proposals.length === 0) {
     return (
       <div className="text-center py-8">
-        <h3 className="text-lg font-semibold text-foreground mb-2">No proposals yet</h3>
-        <p className="text-muted-foreground">Proposals will appear here once service providers submit them.</p>
+        <p className="text-muted-foreground">No proposals received yet.</p>
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      <h3 className="text-xl font-semibold text-foreground mb-4">
-        Proposals for "{jobTitle}" ({proposals.length})
-      </h3>
-      
-      {Object.entries(proposalsByProvider).map(([providerId, providerProposals]) => {
-        const latestProposal = providerProposals[providerProposals.length - 1];
-        const hasMultipleProposals = providerProposals.length > 1;
-        
-        return (
-          <Card key={providerId} className="border">
-            <CardHeader className="pb-3">
-              <div className="flex justify-between items-start">
-                <div className="flex items-center space-x-3">
-                  <User className="h-5 w-5 text-muted-foreground" />
+      <div className="flex justify-between items-center">
+        <div>
+          <h3 className="text-lg font-semibold">Proposals for "{jobTitle}"</h3>
+          <p className="text-sm text-muted-foreground">
+            Budget Range: ৳{originalBudgetMin} - ৳{originalBudgetMax}
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <Badge variant="outline">{pendingProposalsCount} Pending</Badge>
+          <Badge variant="default">{acceptedProposalsCount} Accepted</Badge>
+        </div>
+      </div>
+
+      <div className="space-y-4">
+        {Object.entries(proposalChains).map(([providerId, chainProposals]) => {
+          const latestProposal = chainProposals[chainProposals.length - 1];
+          const providerName = latestProposal.profiles?.full_name || 'Unknown Provider';
+          
+          return (
+            <Card key={providerId}>
+              <CardHeader>
+                <CardTitle className="flex justify-between items-start">
                   <div>
-                    <CardTitle className="text-lg">
-                      {latestProposal.profiles?.full_name || 'Anonymous Provider'}
-                    </CardTitle>
+                    <h4 className="text-lg font-semibold">{providerName}</h4>
                     <p className="text-sm text-muted-foreground">
-                      {latestProposal.profiles?.user_type === 'provider' ? 'Service Provider' : 'Freelancer'}
+                      {latestProposal.profiles?.user_type || 'Provider'} • 
+                      {chainProposals.length > 1 ? ` ${chainProposals.length} proposals` : ' 1 proposal'}
                     </p>
-                    {hasMultipleProposals && (
-                      <p className="text-xs text-blue-600">
-                        {providerProposals.length} proposals in conversation
-                      </p>
-                    )}
                   </div>
-                </div>
-                <Badge className={getStatusColor(latestProposal.status)}>
-                  {latestProposal.status.charAt(0).toUpperCase() + latestProposal.status.slice(1)}
-                </Badge>
-              </div>
-            </CardHeader>
-            
-            <CardContent>
-              <div className="space-y-4">
-                {/* Show proposal conversation chain if multiple proposals */}
-                {hasMultipleProposals && (
-                  <div className="bg-muted/30 p-3 rounded-lg">
-                    <h4 className="text-sm font-semibold mb-2">Proposal History</h4>
-                    <div className="space-y-2">
-                      {providerProposals.map((proposal, index) => (
-                        <div key={proposal.id} className="flex items-center space-x-2 text-sm">
-                          <DollarSign className="h-3 w-3 text-muted-foreground" />
-                          <span>৳{proposal.amount}</span>
-                          <Badge variant="outline" className="text-xs">
-                            {proposal.status}
-                          </Badge>
-                          <span className="text-xs text-muted-foreground">
-                            {formatDistanceToNow(new Date(proposal.created_at), { addSuffix: true })}
-                          </span>
-                          {index < providerProposals.length - 1 && (
-                            <ArrowRight className="h-3 w-3 text-muted-foreground" />
+                  <Badge variant={getStatusBadgeVariant(latestProposal.status)}>
+                    {latestProposal.status}
+                  </Badge>
+                </CardTitle>
+              </CardHeader>
+              
+              <CardContent className="space-y-4">
+                {/* Show proposal chain */}
+                {chainProposals.map((proposal, index) => (
+                  <div key={proposal.id} className="space-y-3">
+                    {index > 0 && <Separator />}
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="text-2xl font-bold text-primary">৳{proposal.amount}</span>
+                          {index > 0 && (
+                            <Badge variant="secondary" className="text-xs">
+                              {index === chainProposals.length - 1 ? 'Latest' : `V${index + 1}`}
+                            </Badge>
                           )}
                         </div>
-                      ))}
+                        {proposal.message && (
+                          <p className="text-sm text-muted-foreground mb-2">
+                            "{proposal.message}"
+                          </p>
+                        )}
+                        <p className="text-xs text-muted-foreground">
+                          {formatDistanceToNow(new Date(proposal.created_at), { addSuffix: true })}
+                        </p>
+                      </div>
                     </div>
                   </div>
-                )}
+                ))}
 
-                {/* Latest proposal details */}
-                <div className="flex items-center space-x-2">
-                  <DollarSign className="h-4 w-4 text-muted-foreground" />
-                  <span className="font-semibold">৳{latestProposal.amount}</span>
-                  <span className="text-sm text-muted-foreground">
-                    (Latest {hasMultipleProposals ? 'counter ' : ''}proposal)
-                  </span>
-                </div>
-                
-                <div className="flex items-center space-x-2">
-                  <Clock className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm text-muted-foreground">
-                    {formatDistanceToNow(new Date(latestProposal.created_at), { addSuffix: true })}
-                  </span>
-                </div>
-                
-                {latestProposal.message && (
-                  <div className="flex items-start space-x-2">
-                    <MessageSquare className="h-4 w-4 text-muted-foreground mt-1" />
-                    <p className="text-sm">{latestProposal.message}</p>
-                  </div>
-                )}
-                
+                {/* Action buttons for latest proposal */}
                 {latestProposal.status === 'pending' && (
-                  <div className="flex space-x-2 pt-3">
+                  <div className="flex gap-2 pt-4">
                     <Button 
-                      size="sm" 
                       onClick={() => handleAccept(latestProposal.id)}
                       disabled={acceptProposal.isPending}
+                      className="flex-1"
                     >
-                      Accept Deal
+                      Accept ৳{latestProposal.amount}
                     </Button>
+                    
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <Button 
+                          variant="outline" 
+                          onClick={() => setSelectedProposal(latestProposal.id)}
+                          className="flex-1"
+                        >
+                          Counter Offer
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Counter Proposal</DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-4">
+                          <div>
+                            <label className="text-sm font-medium">Counter Amount (৳)</label>
+                            <Input
+                              type="number"
+                              placeholder="Enter your counter amount"
+                              value={counterAmount || ''}
+                              onChange={(e) => setCounterAmount(parseInt(e.target.value) || 0)}
+                            />
+                          </div>
+                          <div>
+                            <label className="text-sm font-medium">Message (Optional)</label>
+                            <Textarea
+                              placeholder="Explain your counter offer..."
+                              value={counterMessage}
+                              onChange={(e) => setCounterMessage(e.target.value)}
+                            />
+                          </div>
+                          <Button 
+                            onClick={() => handleCounter(latestProposal.id)}
+                            disabled={counterProposal.isPending || counterAmount <= 0}
+                            className="w-full"
+                          >
+                            Send Counter Proposal
+                          </Button>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                    
                     <Button 
-                      size="sm" 
-                      variant="outline"
-                      onClick={() => handleCounter(latestProposal)}
-                    >
-                      Counter Offer
-                    </Button>
-                    <Button 
-                      size="sm" 
-                      variant="destructive"
+                      variant="destructive" 
                       onClick={() => handleReject(latestProposal.id)}
                       disabled={rejectProposal.isPending}
                     >
@@ -207,78 +230,11 @@ const ProposalManager = ({ proposals, jobTitle, originalBudgetMin, originalBudge
                     </Button>
                   </div>
                 )}
-
-                {latestProposal.status === 'accepted' && (
-                  <div className="bg-green-50 border border-green-200 p-3 rounded-lg">
-                    <p className="text-green-800 font-medium">
-                      ✅ Deal Accepted! A project deal has been created for ৳{latestProposal.amount}
-                    </p>
-                    <p className="text-green-600 text-sm mt-1">
-                      You can manage this project in the "Active Deals" tab.
-                    </p>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        );
-      })}
-
-      <Dialog open={counterDialogOpen} onOpenChange={setCounterDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Send Counter Proposal</DialogTitle>
-          </DialogHeader>
-          
-          <div className="space-y-4">
-            <div>
-              <Label className="text-sm font-medium text-muted-foreground">Current Proposal</Label>
-              <p className="text-sm">৳{selectedProposal?.amount}</p>
-            </div>
-            
-            <div>
-              <Label className="text-sm font-medium text-muted-foreground">Your Budget Range</Label>
-              <p className="text-sm">৳{originalBudgetMin} - ৳{originalBudgetMax}</p>
-            </div>
-
-            <div>
-              <Label htmlFor="counter-amount">Your Counter Offer (৳)</Label>
-              <Input
-                id="counter-amount"
-                type="number"
-                value={counterAmount}
-                onChange={(e) => setCounterAmount(e.target.value)}
-                placeholder={`Enter amount between ${originalBudgetMin} - ${originalBudgetMax}`}
-                min={originalBudgetMin}
-                max={originalBudgetMax}
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="counter-message">Message (Optional)</Label>
-              <Textarea
-                id="counter-message"
-                value={counterMessage}
-                onChange={(e) => setCounterMessage(e.target.value)}
-                placeholder="Explain your counter offer..."
-                rows={3}
-              />
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setCounterDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button 
-              onClick={submitCounter}
-              disabled={!counterAmount || counterProposal.isPending}
-            >
-              {counterProposal.isPending ? 'Sending...' : 'Send Counter'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
     </div>
   );
 };
