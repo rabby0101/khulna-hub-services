@@ -25,12 +25,28 @@ export const useJobs = () => {
   return useQuery({
     queryKey: ['jobs'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      console.log('Fetching jobs...');
+      
+      // First try to get jobs with profile data
+      const { data: jobsWithProfiles, error: profileError } = await supabase
         .from('jobs')
         .select(`
           *,
-          profiles!jobs_client_id_fkey (full_name, location)
+          profiles!inner(full_name, location)
         `)
+        .eq('status', 'open')
+        .order('created_at', { ascending: false });
+
+      if (jobsWithProfiles && !profileError) {
+        console.log('Jobs with profiles:', jobsWithProfiles);
+        return jobsWithProfiles as Job[];
+      }
+
+      // If that fails, get jobs without profile data
+      console.log('Profile join failed, fetching jobs without profiles...');
+      const { data: jobs, error } = await supabase
+        .from('jobs')
+        .select('*')
         .eq('status', 'open')
         .order('created_at', { ascending: false });
       
@@ -38,7 +54,9 @@ export const useJobs = () => {
         console.error('Error fetching jobs:', error);
         throw error;
       }
-      return data as Job[];
+      
+      console.log('Jobs fetched:', jobs);
+      return jobs as Job[];
     }
   });
 };
@@ -51,16 +69,24 @@ export const useCreateJob = () => {
     mutationFn: async (jobData: Omit<Job, 'id' | 'created_at' | 'client_id' | 'profiles'>) => {
       if (!user) throw new Error('Must be logged in to create a job');
       
+      console.log('Creating job with data:', jobData);
+      
       const { data, error } = await supabase
         .from('jobs')
         .insert([{ ...jobData, client_id: user.id }])
         .select()
         .single();
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error creating job:', error);
+        throw error;
+      }
+      
+      console.log('Job created successfully:', data);
       return data;
     },
     onSuccess: () => {
+      console.log('Invalidating jobs query...');
       queryClient.invalidateQueries({ queryKey: ['jobs'] });
     }
   });
