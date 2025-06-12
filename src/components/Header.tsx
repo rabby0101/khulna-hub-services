@@ -1,82 +1,73 @@
 
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Search, MapPin, User, Plus } from "lucide-react";
-import { Link } from "react-router-dom";
-import { useAuth } from "@/contexts/AuthContext";
-import UserMenu from "./UserMenu";
-import ThemeToggle from "./ThemeToggle";
+import React from 'react';
+import { Button } from '@/components/ui/button';
+import { Briefcase, Plus } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { Link, useLocation } from 'react-router-dom';
+import ThemeToggle from './ThemeToggle';
+import UserMenu from './UserMenu';
+import NotificationCenter from './NotificationCenter';
 
 const Header = () => {
   const { user } = useAuth();
+  const location = useLocation();
 
   return (
-    <header className="bg-card shadow-sm border-b border-border">
-      <div className="container mx-auto px-4">
-        <div className="flex items-center justify-between h-16">
-          {/* Logo */}
-          <Link to="/" className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-sm">KS</span>
-            </div>
-            <span className="font-bold text-xl text-foreground">Khulna Services</span>
+    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <div className="container mx-auto px-4 flex h-16 items-center justify-between">
+        <Link to="/" className="flex items-center space-x-2">
+          <Briefcase className="h-8 w-8 text-primary" />
+          <span className="text-xl font-bold">KhulnaJobs</span>
+        </Link>
+
+        <nav className="hidden md:flex items-center space-x-6">
+          <Link 
+            to="/" 
+            className={`text-sm font-medium transition-colors hover:text-primary ${
+              location.pathname === '/' ? 'text-primary' : 'text-muted-foreground'
+            }`}
+          >
+            Home
           </Link>
+          <Link 
+            to="/jobs" 
+            className={`text-sm font-medium transition-colors hover:text-primary ${
+              location.pathname === '/jobs' ? 'text-primary' : 'text-muted-foreground'
+            }`}
+          >
+            Browse Jobs
+          </Link>
+          {user && (
+            <Link 
+              to="/profile" 
+              className={`text-sm font-medium transition-colors hover:text-primary ${
+                location.pathname === '/profile' ? 'text-primary' : 'text-muted-foreground'
+              }`}
+            >
+              Profile
+            </Link>
+          )}
+        </nav>
 
-          {/* Search Bar - Hidden on mobile */}
-          <div className="hidden md:flex items-center flex-1 max-w-2xl mx-8">
-            <div className="relative w-full">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-              <Input
-                placeholder="What service do you need?"
-                className="pl-10 pr-4 h-10 bg-background"
-              />
-            </div>
-          </div>
-
-          {/* Location & Actions */}
-          <div className="flex items-center space-x-4">
-            <div className="hidden sm:flex items-center text-sm text-muted-foreground">
-              <MapPin className="w-4 h-4 mr-1" />
-              Khulna, Bangladesh
-            </div>
-            
-            <ThemeToggle />
-
-            {user && (
-              <Button variant="outline" size="sm" className="hidden md:flex" asChild>
+        <div className="flex items-center space-x-4">
+          <ThemeToggle />
+          
+          {user ? (
+            <>
+              <NotificationCenter />
+              <Button asChild size="sm">
                 <Link to="/post-job">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Post a Job
+                  <Plus className="h-4 w-4 mr-2" />
+                  Post Job
                 </Link>
               </Button>
-            )}
-
-            <Button variant="outline" size="sm" className="hidden sm:flex" asChild>
-              <Link to="/jobs">Browse Jobs</Link>
-            </Button>
-            
-            {user ? (
               <UserMenu />
-            ) : (
-              <Button size="sm" asChild>
-                <Link to="/auth">
-                  <User className="w-4 h-4 mr-2" />
-                  Sign In
-                </Link>
-              </Button>
-            )}
-          </div>
-        </div>
-
-        {/* Mobile Search */}
-        <div className="md:hidden pb-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-            <Input
-              placeholder="What service do you need?"
-              className="pl-10 pr-4 h-10 bg-background"
-            />
-          </div>
+            </>
+          ) : (
+            <Button asChild>
+              <Link to="/auth">Sign In</Link>
+            </Button>
+          )}
         </div>
       </div>
     </header>

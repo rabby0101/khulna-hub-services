@@ -1,3 +1,4 @@
+
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -10,7 +11,7 @@ export interface Job {
   budget_min: number;
   budget_max: number;
   location: string;
-  status: string; // Changed from literal union to string to match database
+  status: string;
   urgent: boolean;
   created_at: string;
   client_id: string;
@@ -38,7 +39,10 @@ export const useJobs = () => {
 
       if (jobsWithProfiles && !profileError) {
         console.log('Jobs with profiles:', jobsWithProfiles);
-        return jobsWithProfiles as Job[];
+        return jobsWithProfiles.map(job => ({
+          ...job,
+          profiles: job.profiles[0] // Take the first profile since it's a join
+        })) as Job[];
       }
 
       // If that fails, get jobs without profile data
