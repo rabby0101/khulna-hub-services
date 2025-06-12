@@ -9,6 +9,89 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      bids: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          job_id: string
+          message: string | null
+          provider_id: string
+          status: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: string
+          job_id: string
+          message?: string | null
+          provider_id: string
+          status?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          job_id?: string
+          message?: string | null
+          provider_id?: string
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bids_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      jobs: {
+        Row: {
+          budget_max: number
+          budget_min: number
+          category: string
+          client_id: string
+          created_at: string
+          description: string
+          id: string
+          location: string
+          status: string | null
+          title: string
+          updated_at: string
+          urgent: boolean | null
+        }
+        Insert: {
+          budget_max: number
+          budget_min: number
+          category: string
+          client_id: string
+          created_at?: string
+          description: string
+          id?: string
+          location: string
+          status?: string | null
+          title: string
+          updated_at?: string
+          urgent?: boolean | null
+        }
+        Update: {
+          budget_max?: number
+          budget_min?: number
+          category?: string
+          client_id?: string
+          created_at?: string
+          description?: string
+          id?: string
+          location?: string
+          status?: string | null
+          title?: string
+          updated_at?: string
+          urgent?: boolean | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -42,6 +125,68 @@ export type Database = {
           phone?: string | null
           updated_at?: string
           user_type?: string | null
+        }
+        Relationships: []
+      }
+      reviews: {
+        Row: {
+          comment: string | null
+          created_at: string
+          id: string
+          job_id: string
+          rating: number
+          reviewed_id: string
+          reviewer_id: string
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          job_id: string
+          rating: number
+          reviewed_id: string
+          reviewer_id: string
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          job_id?: string
+          rating?: number
+          reviewed_id?: string
+          reviewer_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reviews_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      service_categories: {
+        Row: {
+          created_at: string
+          description: string | null
+          icon: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          name?: string
         }
         Relationships: []
       }
