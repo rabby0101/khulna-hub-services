@@ -2,19 +2,24 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search, MapPin, User, Menu } from "lucide-react";
+import { Link } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
+import UserMenu from "./UserMenu";
 
 const Header = () => {
+  const { user } = useAuth();
+
   return (
     <header className="bg-white shadow-sm border-b">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <div className="flex items-center space-x-2">
+          <Link to="/" className="flex items-center space-x-2">
             <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
               <span className="text-white font-bold text-sm">KS</span>
             </div>
             <span className="font-bold text-xl text-foreground">Khulna Services</span>
-          </div>
+          </Link>
 
           {/* Search Bar - Hidden on mobile */}
           <div className="hidden md:flex items-center flex-1 max-w-2xl mx-8">
@@ -38,10 +43,16 @@ const Header = () => {
               Post a Job
             </Button>
             
-            <Button size="sm">
-              <User className="w-4 h-4 mr-2" />
-              Sign In
-            </Button>
+            {user ? (
+              <UserMenu />
+            ) : (
+              <Button size="sm" asChild>
+                <Link to="/auth">
+                  <User className="w-4 h-4 mr-2" />
+                  Sign In
+                </Link>
+              </Button>
+            )}
             
             <Button variant="ghost" size="sm" className="md:hidden">
               <Menu className="w-5 h-5" />
