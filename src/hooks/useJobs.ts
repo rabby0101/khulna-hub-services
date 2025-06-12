@@ -29,12 +29,15 @@ export const useJobs = () => {
         .from('jobs')
         .select(`
           *,
-          profiles (full_name, location)
+          profiles!jobs_client_id_fkey (full_name, location)
         `)
         .eq('status', 'open')
         .order('created_at', { ascending: false });
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching jobs:', error);
+        throw error;
+      }
       return data as Job[];
     }
   });

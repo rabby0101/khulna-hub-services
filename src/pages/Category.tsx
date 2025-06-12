@@ -1,0 +1,97 @@
+
+import React from 'react';
+import { useParams, Link } from 'react-router-dom';
+import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { MapPin, Clock, DollarSign, ArrowLeft } from 'lucide-react';
+import { useJobs } from '@/hooks/useJobs';
+import { useAuth } from '@/contexts/AuthContext';
+import { toast } from '@/hooks/use-toast';
+import Header from '@/components/Header';
+import JobCard from '@/components/JobCard';
+
+const Category = () => {
+  const { category } = useParams<{ category: string }>();
+  const { data: jobs, isLoading } = useJobs();
+  const { user } = useAuth();
+
+  const handleSendProposal = (jobId: string) => {
+    if (!user) {
+      toast({
+        title: "Please sign in",
+        description: "You need to be logged in to send proposals",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    toast({
+      title: "Feature coming soon!",
+      description: "Proposal system will be implemented next",
+    });
+  };
+
+  const categoryJobs = jobs?.filter(job => 
+    job.category.toLowerCase().replace(/\s+/g, '-') === category
+  ) || [];
+
+  const categoryName = category?.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <div className="container mx-auto px-4 py-8">
+          <div className="text-center">Loading jobs...</div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-background">
+      <Header />
+      <div className="container mx-auto px-4 py-8">
+        <div className="mb-8">
+          <Button variant="outline" asChild className="mb-4">
+            <Link to="/">
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Home
+            </Link>
+          </Button>
+          <h1 className="text-3xl font-bold text-foreground mb-4">{categoryName} Jobs</h1>
+          <p className="text-xl text-muted-foreground">
+            {categoryJobs.length} job{categoryJobs.length !== 1 ? 's' : ''} available
+          </p>
+        </div>
+
+        {categoryJobs.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {categoryJobs.map((job) => (
+              <JobCard 
+                key={job.id} 
+                job={job} 
+                onSendProposal={handleSendProposal}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-12">
+            <h3 className="text-xl font-semibold text-foreground mb-2">
+              No jobs in {categoryName}
+            </h3>
+            <p className="text-muted-foreground mb-4">
+              Be the first to post a job in this category!
+            </p>
+            <Button asChild>
+              <Link to="/post-job">Post a Job</Link>
+            </Button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default Category;
