@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -21,7 +20,7 @@ interface Profile {
   phone: string | null;
   location: string | null;
   avatar_url: string | null;
-  user_type: 'seeker' | 'provider' | 'both' | null;
+  user_type: string | null; // Changed from literal union to string to match database
 }
 
 const Profile = () => {
@@ -92,7 +91,7 @@ const Profile = () => {
   const handleServiceProviderToggle = (checked: boolean) => {
     if (!profile) return;
     
-    let newUserType: 'seeker' | 'provider' | 'both';
+    let newUserType: string;
     
     if (checked) {
       // If turning on service provider
