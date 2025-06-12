@@ -13,16 +13,32 @@ import { Badge } from '@/components/ui/badge';
 import { Bell, CheckCheck, Clock } from 'lucide-react';
 import { useNotifications, useMarkNotificationAsRead, useMarkAllNotificationsAsRead } from '@/hooks/useNotifications';
 import { formatDistanceToNow } from 'date-fns';
+import { useNavigate } from 'react-router-dom';
 
 const NotificationCenter = () => {
   const { data: notifications = [], isLoading } = useNotifications();
   const markAsRead = useMarkNotificationAsRead();
   const markAllAsRead = useMarkAllNotificationsAsRead();
+  const navigate = useNavigate();
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
-  const handleMarkAsRead = (notificationId: string) => {
-    markAsRead.mutate(notificationId);
+  const handleNotificationClick = (notification: any) => {
+    // Mark as read if not already read
+    if (!notification.read) {
+      markAsRead.mutate(notification.id);
+    }
+
+    // Navigate based on notification type and related data
+    if (notification.related_job_id) {
+      if (notification.type === 'proposal_received') {
+        // Navigate to My Jobs page where they can manage proposals
+        navigate('/my-jobs');
+      } else if (notification.type === 'proposal_accepted' || notification.type === 'proposal_rejected') {
+        // For now, navigate to My Jobs page - could be enhanced to show specific job details
+        navigate('/my-jobs');
+      }
+    }
   };
 
   const handleMarkAllAsRead = () => {
@@ -94,7 +110,7 @@ const NotificationCenter = () => {
                 className={`flex flex-col items-start p-3 cursor-pointer ${
                   !notification.read ? 'bg-muted/50' : ''
                 }`}
-                onClick={() => !notification.read && handleMarkAsRead(notification.id)}
+                onClick={() => handleNotificationClick(notification)}
               >
                 <div className="flex items-start justify-between w-full">
                   <div className="flex items-start space-x-2 flex-1">

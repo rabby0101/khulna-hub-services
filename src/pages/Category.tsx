@@ -13,6 +13,20 @@ import JobCard from '@/components/JobCard';
 import ProposalDialog from '@/components/ProposalDialog';
 import { supabase } from '@/integrations/supabase/client';
 
+// Category mapping to match the ServiceCategories component
+const categoryMapping: { [key: string]: string } = {
+  'home-repair-maintenance': 'Home Repair & Maintenance',
+  'home-services': 'Home Services', 
+  'education-tutoring': 'Education & Tutoring',
+  'technology-it': 'Technology & IT',
+  'automotive': 'Automotive',
+  'personal-services': 'Personal Services',
+  'construction-renovation': 'Construction & Renovation',
+  'food-catering': 'Food & Catering',
+  'mobile-electronics': 'Mobile & Electronics',
+  'events-entertainment': 'Events & Entertainment'
+};
+
 const Category = () => {
   const { category } = useParams<{ category: string }>();
   const { data: jobs, isLoading } = useJobs();
@@ -25,6 +39,17 @@ const Category = () => {
       toast({
         title: "Please sign in",
         description: "You need to be logged in to send proposals",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Check if user is trying to send proposal on their own job
+    const job = jobs?.find(j => j.id === jobId);
+    if (job && job.client_id === user.id) {
+      toast({
+        title: "Cannot Send Proposal",
+        description: "You cannot send a proposal on your own job posting",
         variant: "destructive",
       });
       return;
@@ -46,18 +71,20 @@ const Category = () => {
       return;
     }
 
-    const job = jobs?.find(j => j.id === jobId);
     if (job) {
       setSelectedJob(job);
       setProposalDialogOpen(true);
     }
   };
 
+  // Use the category mapping to get the correct category name
+  const categoryName = category ? categoryMapping[category] || category : '';
+  
   const categoryJobs = jobs?.filter(job => 
-    job.category.toLowerCase().replace(/\s+/g, '-') === category
+    job.category === categoryName
   ) || [];
 
-  const categoryName = category?.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+  const displayCategoryName = categoryName.replace(/&/g, 'and');
 
   if (isLoading) {
     return (
@@ -81,7 +108,7 @@ const Category = () => {
               Back to Home
             </Link>
           </Button>
-          <h1 className="text-3xl font-bold text-foreground mb-4">{categoryName} Jobs</h1>
+          <h1 className="text-3xl font-bold text-foreground mb-4">{displayCategoryName} Jobs</h1>
           <p className="text-xl text-muted-foreground">
             {categoryJobs.length} job{categoryJobs.length !== 1 ? 's' : ''} available
           </p>
@@ -94,13 +121,14 @@ const Category = () => {
                 key={job.id} 
                 job={job} 
                 onSendProposal={handleSendProposal}
+                showProposalButton={job.client_id !== user?.id}
               />
             ))}
           </div>
         ) : (
           <div className="text-center py-12">
             <h3 className="text-xl font-semibold text-foreground mb-2">
-              No jobs in {categoryName}
+              No jobs in {displayCategoryName}
             </h3>
             <p className="text-muted-foreground mb-4">
               Be the first to post a job in this category!

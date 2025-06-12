@@ -9,9 +9,10 @@ import { Job } from '@/hooks/useJobs';
 interface JobCardProps {
   job: Job;
   onSendProposal?: (jobId: string) => void;
+  showProposalButton?: boolean;
 }
 
-const JobCard: React.FC<JobCardProps> = ({ job, onSendProposal }) => {
+const JobCard: React.FC<JobCardProps> = ({ job, onSendProposal, showProposalButton = true }) => {
   return (
     <Card className="hover-scale cursor-pointer group border border-border hover:shadow-lg transition-all duration-300">
       <CardContent className="p-6">
@@ -45,7 +46,7 @@ const JobCard: React.FC<JobCardProps> = ({ job, onSendProposal }) => {
           </div>
         </div>
 
-        {onSendProposal && (
+        {onSendProposal && showProposalButton && (
           <Button 
             className="w-full bg-primary text-primary-foreground py-2 px-4 rounded-md hover:bg-primary/90 transition-colors text-sm font-medium"
             onClick={() => onSendProposal(job.id)}
