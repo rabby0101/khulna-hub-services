@@ -2,8 +2,12 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search, MapPin, Plus, Users } from "lucide-react";
+import { Link } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 
 const HeroSection = () => {
+  const { user } = useAuth();
+
   return (
     <section className="gradient-hero text-white py-16 md:py-24">
       <div className="container mx-auto px-4 text-center">
@@ -36,13 +40,17 @@ const HeroSection = () => {
 
           {/* Action Buttons */}
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center animate-fade-in">
-            <Button size="lg" variant="secondary" className="bg-white text-primary hover:bg-gray-100 w-full sm:w-auto">
-              <Plus className="w-5 h-5 mr-2" />
-              Post a Job
+            <Button size="lg" variant="secondary" className="bg-white text-primary hover:bg-gray-100 w-full sm:w-auto" asChild>
+              <Link to={user ? "/post-job" : "/auth"}>
+                <Plus className="w-5 h-5 mr-2" />
+                Post a Job
+              </Link>
             </Button>
-            <Button size="lg" variant="outline" className="border-white text-white hover:bg-white hover:text-primary w-full sm:w-auto">
-              <Users className="w-5 h-5 mr-2" />
-              Browse Services
+            <Button size="lg" variant="outline" className="border-white text-white hover:bg-white hover:text-primary w-full sm:w-auto" asChild>
+              <Link to="/jobs">
+                <Users className="w-5 h-5 mr-2" />
+                Browse Services
+              </Link>
             </Button>
           </div>
 

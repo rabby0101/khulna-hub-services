@@ -1,7 +1,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, MapPin, User, Menu } from "lucide-react";
+import { Search, MapPin, User, Menu, Plus } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import UserMenu from "./UserMenu";
@@ -39,8 +39,17 @@ const Header = () => {
               Khulna, Bangladesh
             </div>
             
-            <Button variant="outline" size="sm" className="hidden md:flex">
-              Post a Job
+            {user && (
+              <Button variant="outline" size="sm" className="hidden md:flex" asChild>
+                <Link to="/post-job">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Post a Job
+                </Link>
+              </Button>
+            )}
+
+            <Button variant="outline" size="sm" className="hidden sm:flex" asChild>
+              <Link to="/jobs">Browse Jobs</Link>
             </Button>
             
             {user ? (
