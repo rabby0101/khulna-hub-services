@@ -319,13 +319,6 @@ export type Database = {
             referencedRelation: "jobs"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "notifications_related_proposal_id_fkey"
-            columns: ["related_proposal_id"]
-            isOneToOne: false
-            referencedRelation: "proposals"
-            referencedColumns: ["id"]
-          },
         ]
       }
       profiles: {
