@@ -96,15 +96,18 @@ const ChatDialog: React.FC<ChatDialogProps> = ({
     amount: number, 
     message: string, 
     type: string, 
-    proposalId?: string
+    negotiationProposalId?: string
   ) => {
     try {
+      // Use the passed proposalId for negotiations, or the original proposalId for new proposals
+      const finalProposalId = negotiationProposalId || (type === 'proposal' ? null : proposalId);
+      console.log('Sending negotiation with proposalId:', finalProposalId);
       await sendNegotiationMessage.mutateAsync({
         conversationId,
         amount,
         message,
         type,
-        proposalId
+        proposalId: finalProposalId
       });
     } catch (error) {
       console.error('Failed to send negotiation:', error);

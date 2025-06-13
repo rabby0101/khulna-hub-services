@@ -190,12 +190,52 @@ export const useSendNegotiationMessage = () => {
     }) => {
       if (!user) throw new Error('Must be logged in to send messages');
 
+      let finalProposalId = params.proposalId;
+
+      // If this is a new proposal, create it in the proposals table
+      if (params.type === 'proposal' && !params.proposalId) {
+        // Get conversation details to get job_id and provider_id
+        const { data: conversation } = await supabase
+          .from('conversations')
+          .select('job_id, provider_id, client_id')
+          .eq('id', params.conversationId)
+          .single();
+
+        if (conversation) {
+          // Determine who is the provider based on who is sending
+          const isClientSending = user.id === conversation.client_id;
+          const providerId = isClientSending ? conversation.provider_id : user.id;
+
+          // Create the proposal
+          const { data: newProposal, error: proposalError } = await supabase
+            .from('proposals')
+            .insert([{
+              job_id: conversation.job_id,
+              provider_id: providerId,
+              amount: params.amount,
+              message: params.message,
+              status: 'pending'
+            }])
+            .select()
+            .single();
+
+          if (proposalError) {
+            console.error('Error creating proposal:', proposalError);
+            throw proposalError;
+          }
+
+          finalProposalId = newProposal.id;
+        }
+      }
+
       const negotiationData = {
         type: params.type,
         amount: params.amount,
-        proposalId: params.proposalId,
+        proposalId: finalProposalId,
         status: 'pending'
       };
+
+      console.log('Sending negotiation with data:', negotiationData);
 
       const { data, error } = await supabase
         .from('messages')
@@ -205,7 +245,7 @@ export const useSendNegotiationMessage = () => {
           message_type: 'negotiation',
           sender_id: user.id,
           negotiation_data: negotiationData,
-          original_proposal_id: params.proposalId
+          original_proposal_id: finalProposalId
         }])
         .select()
         .single();
@@ -220,6 +260,7 @@ export const useSendNegotiationMessage = () => {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['messages', data.conversation_id] });
       queryClient.invalidateQueries({ queryKey: ['conversations'] });
+      queryClient.invalidateQueries({ queryKey: ['proposals'] });
       toast({
         title: "Negotiation Sent",
         description: "Your negotiation message has been sent",
