@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -14,19 +14,51 @@ import { Bell, CheckCheck, Clock } from 'lucide-react';
 import { useNotifications, useMarkNotificationAsRead, useMarkAllNotificationsAsRead } from '@/hooks/useNotifications';
 import { formatDistanceToNow } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
+import ChatDialog from '@/components/chat/ChatDialog';
+import { useAuth } from '@/contexts/AuthContext';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
 const NotificationCenter = () => {
+  const { user } = useAuth();
   const { data: notifications = [], isLoading } = useNotifications();
   const markAsRead = useMarkNotificationAsRead();
   const markAllAsRead = useMarkAllNotificationsAsRead();
   const navigate = useNavigate();
+  const [chatDialogOpen, setChatDialogOpen] = useState(false);
+  const [selectedConversation, setSelectedConversation] = useState<any>(null);
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
-  const handleNotificationClick = (notification: any) => {
+  const handleNotificationClick = async (notification: any) => {
     // Mark as read if not already read
     if (!notification.read) {
       markAsRead.mutate(notification.id);
+    }
+
+    // Handle message notifications specially - open chat dialog
+    if (notification.type === 'message_received' && notification.related_proposal_id) {
+      try {
+        // Get conversation details using the conversation_id stored in related_proposal_id
+        const { data: conversation } = await supabase
+          .from('conversations')
+          .select(`
+            *,
+            jobs(title),
+            client_profile:profiles!conversations_client_id_fkey(id, full_name),
+            provider_profile:profiles!conversations_provider_id_fkey(id, full_name)
+          `)
+          .eq('id', notification.related_proposal_id)
+          .single();
+
+        if (conversation) {
+          setSelectedConversation(conversation);
+          setChatDialogOpen(true);
+          return;
+        }
+      } catch (error) {
+        console.error('Error fetching conversation:', error);
+      }
     }
 
     // Navigate based on notification type and related data
@@ -60,6 +92,8 @@ const NotificationCenter = () => {
         return '🎉';
       case 'counter_proposal':
         return '🔄';
+      case 'message_received':
+        return '💬';
       default:
         return '📢';
     }
@@ -142,6 +176,27 @@ const NotificationCenter = () => {
           </div>
         )}
       </DropdownMenuContent>
+      
+      {/* Chat Dialog for message notifications */}
+      {selectedConversation && (
+        <ChatDialog
+          open={chatDialogOpen}
+          onOpenChange={setChatDialogOpen}
+          jobId={selectedConversation.job_id}
+          jobTitle={selectedConversation.jobs?.title || 'Unknown Job'}
+          providerId={selectedConversation.provider_id}
+          clientId={selectedConversation.client_id}
+          proposalId={selectedConversation.proposal_id || ''}
+          otherParticipant={{
+            id: user?.id === selectedConversation.client_id 
+              ? selectedConversation.provider_id 
+              : selectedConversation.client_id,
+            name: user?.id === selectedConversation.client_id
+              ? selectedConversation.provider_profile?.full_name || 'Unknown Provider'
+              : selectedConversation.client_profile?.full_name || 'Unknown Client'
+          }}
+        />
+      )}
     </DropdownMenu>
   );
 };
