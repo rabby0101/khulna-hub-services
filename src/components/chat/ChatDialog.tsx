@@ -7,7 +7,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { useMessages, useSendMessage, useGetOrCreateConversation, Conversation } from '@/hooks/useChat';
+import { useConversationMessages, useSendMessage, useSendNegotiationMessage, useCreateConversation } from '@/hooks/useConversations';
 import { useAuth } from '@/contexts/AuthContext';
 import MessageList from './MessageList';
 import MessageInput from './MessageInput';
@@ -39,9 +39,10 @@ const ChatDialog: React.FC<ChatDialogProps> = ({
 }) => {
   const { user } = useAuth();
   const [conversationId, setConversationId] = useState<string>('');
-  const { data: messages = [], isLoading } = useMessages(conversationId);
+  const { data: messages = [], isLoading } = useConversationMessages(conversationId);
   const sendMessage = useSendMessage();
-  const getOrCreateConversation = useGetOrCreateConversation();
+  const sendNegotiationMessage = useSendNegotiationMessage();
+  const createConversation = useCreateConversation();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const isClient = user?.id === clientId;
@@ -53,11 +54,11 @@ const ChatDialog: React.FC<ChatDialogProps> = ({
   // Create or get conversation when dialog opens
   useEffect(() => {
     if (open && !conversationId) {
-      getOrCreateConversation.mutate({
-        jobId,
-        clientId,
-        providerId,
-        proposalId
+      createConversation.mutate({
+        job_id: jobId,
+        client_id: clientId,
+        provider_id: providerId,
+        proposal_id: proposalId
       }, {
         onSuccess: (conversation) => {
           setConversationId(conversation.id);
@@ -72,14 +73,41 @@ const ChatDialog: React.FC<ChatDialogProps> = ({
     }
   }, [messages.length]);
 
-  const handleSendMessage = async (content: string) => {
+  const handleSendMessage = async (
+    content: string, 
+    messageType: string = 'text', 
+    attachmentUrl?: string, 
+    negotiationData?: any
+  ) => {
     try {
       await sendMessage.mutateAsync({
-        conversationId,
-        content
+        conversation_id: conversationId,
+        content,
+        message_type: messageType,
+        attachment_url: attachmentUrl,
+        negotiation_data: negotiationData
       });
     } catch (error) {
       console.error('Failed to send message:', error);
+    }
+  };
+
+  const handleSendNegotiation = async (
+    amount: number, 
+    message: string, 
+    type: string, 
+    proposalId?: string
+  ) => {
+    try {
+      await sendNegotiationMessage.mutateAsync({
+        conversationId,
+        amount,
+        message,
+        type,
+        proposalId
+      });
+    } catch (error) {
+      console.error('Failed to send negotiation:', error);
     }
   };
 
@@ -115,7 +143,11 @@ const ChatDialog: React.FC<ChatDialogProps> = ({
                 <p>No messages yet. Start the conversation!</p>
               </div>
             ) : (
-              <MessageList messages={messages} currentUserId={user?.id || ''} />
+              <MessageList 
+                messages={messages} 
+                currentUserId={user?.id || ''} 
+                onSendNegotiation={handleSendNegotiation}
+              />
             )}
             <div ref={messagesEndRef} />
           </div>
@@ -123,7 +155,10 @@ const ChatDialog: React.FC<ChatDialogProps> = ({
           <div className="border-t p-4">
             <MessageInput 
               onSendMessage={handleSendMessage}
-              disabled={sendMessage.isPending}
+              onSendNegotiation={handleSendNegotiation}
+              disabled={sendMessage.isPending || sendNegotiationMessage.isPending}
+              showNegotiationOptions={true}
+              conversationId={conversationId}
             />
           </div>
         </div>

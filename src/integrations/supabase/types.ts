@@ -237,6 +237,8 @@ export type Database = {
           created_at: string
           id: string
           message_type: string
+          negotiation_data: Json | null
+          original_proposal_id: string | null
           read_at: string | null
           sender_id: string
         }
@@ -247,6 +249,8 @@ export type Database = {
           created_at?: string
           id?: string
           message_type?: string
+          negotiation_data?: Json | null
+          original_proposal_id?: string | null
           read_at?: string | null
           sender_id: string
         }
@@ -257,6 +261,8 @@ export type Database = {
           created_at?: string
           id?: string
           message_type?: string
+          negotiation_data?: Json | null
+          original_proposal_id?: string | null
           read_at?: string | null
           sender_id?: string
         }
@@ -266,6 +272,13 @@ export type Database = {
             columns: ["conversation_id"]
             isOneToOne: false
             referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_original_proposal_id_fkey"
+            columns: ["original_proposal_id"]
+            isOneToOne: false
+            referencedRelation: "proposals"
             referencedColumns: ["id"]
           },
           {

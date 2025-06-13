@@ -25,10 +25,12 @@ export interface Message {
   sender_id: string;
   content: string;
   message_type: string;
-  attachment_url: string | null;
-  read_at: string | null;
+  attachment_url?: string | null;
+  read_at?: string | null;
   created_at: string;
   sender_profile?: any;
+  negotiation_data?: any;
+  original_proposal_id?: string | null;
 }
 
 export const useConversations = () => {
@@ -138,6 +140,8 @@ export const useSendMessage = () => {
       content: string;
       message_type?: string;
       attachment_url?: string;
+      negotiation_data?: any;
+      original_proposal_id?: string;
     }) => {
       if (!user) throw new Error('Must be logged in to send messages');
 
@@ -166,6 +170,65 @@ export const useSendMessage = () => {
       toast({
         title: "Error",
         description: "Failed to send message",
+        variant: "destructive",
+      });
+    }
+  });
+};
+
+export const useSendNegotiationMessage = () => {
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+
+  return useMutation({
+    mutationFn: async (params: {
+      conversationId: string;
+      amount: number;
+      message: string;
+      type: string;
+      proposalId?: string;
+    }) => {
+      if (!user) throw new Error('Must be logged in to send messages');
+
+      const negotiationData = {
+        type: params.type,
+        amount: params.amount,
+        proposalId: params.proposalId,
+        status: 'pending'
+      };
+
+      const { data, error } = await supabase
+        .from('messages')
+        .insert([{
+          conversation_id: params.conversationId,
+          content: params.message,
+          message_type: 'negotiation',
+          sender_id: user.id,
+          negotiation_data: negotiationData,
+          original_proposal_id: params.proposalId
+        }])
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error sending negotiation message:', error);
+        throw error;
+      }
+
+      return data;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['messages', data.conversation_id] });
+      queryClient.invalidateQueries({ queryKey: ['conversations'] });
+      toast({
+        title: "Negotiation Sent",
+        description: "Your negotiation message has been sent",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to send negotiation message",
         variant: "destructive",
       });
     }
