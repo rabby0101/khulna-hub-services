@@ -7,7 +7,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { useMessages, useSendMessage, Conversation } from '@/hooks/useChat';
+import { useMessages, useSendMessage, useGetOrCreateConversation, Conversation } from '@/hooks/useChat';
 import { useAuth } from '@/contexts/AuthContext';
 import MessageList from './MessageList';
 import MessageInput from './MessageInput';
@@ -41,6 +41,7 @@ const ChatDialog: React.FC<ChatDialogProps> = ({
   const [conversationId, setConversationId] = useState<string>('');
   const { data: messages = [], isLoading } = useMessages(conversationId);
   const sendMessage = useSendMessage();
+  const getOrCreateConversation = useGetOrCreateConversation();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const isClient = user?.id === clientId;
@@ -48,6 +49,22 @@ const ChatDialog: React.FC<ChatDialogProps> = ({
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
+
+  // Create or get conversation when dialog opens
+  useEffect(() => {
+    if (open && !conversationId) {
+      getOrCreateConversation.mutate({
+        jobId,
+        clientId,
+        providerId,
+        proposalId
+      }, {
+        onSuccess: (conversation) => {
+          setConversationId(conversation.id);
+        }
+      });
+    }
+  }, [open, conversationId, jobId, clientId, providerId, proposalId]);
 
   useEffect(() => {
     if (messages.length > 0) {

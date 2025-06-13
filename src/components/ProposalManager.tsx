@@ -267,8 +267,7 @@ const ProposalManager: React.FC<ProposalManagerProps> = ({
           proposalId={selectedChatProposal.id}
           otherParticipant={{
             id: selectedChatProposal.provider_id,
-            name: selectedChatProposal.profiles?.full_name || 'Unknown Provider',
-            avatar_url: undefined // Could be added to profile data later
+            name: selectedChatProposal.profiles?.full_name || 'Unknown Provider'
           }}
         />
       )}
