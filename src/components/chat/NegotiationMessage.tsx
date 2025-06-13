@@ -28,15 +28,24 @@ const NegotiationMessage: React.FC<NegotiationMessageProps> = ({
 
   const { type, amount, proposalId, status, originalAmount } = negotiationData;
 
+  console.log('Negotiation data:', negotiationData);
+  console.log('Proposal ID:', proposalId);
+
   const handleAccept = () => {
+    console.log('Accept clicked, proposalId:', proposalId);
     if (proposalId) {
       acceptProposal.mutate(proposalId);
+    } else {
+      console.error('No proposalId available for accept');
     }
   };
 
   const handleReject = () => {
+    console.log('Reject clicked, proposalId:', proposalId);
     if (proposalId) {
       rejectProposal.mutate(proposalId);
+    } else {
+      console.error('No proposalId available for reject');
     }
   };
 
