@@ -9,6 +9,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Separator } from '@/components/ui/separator';
 import { useAcceptProposal, useRejectProposal, useCounterProposal } from '@/hooks/useProposalActions';
 import { formatDistanceToNow } from 'date-fns';
+import ChatDialog from '@/components/chat/ChatDialog';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface Proposal {
   id: string;
@@ -37,12 +39,15 @@ const ProposalManager: React.FC<ProposalManagerProps> = ({
   originalBudgetMin, 
   originalBudgetMax 
 }) => {
+  const { user } = useAuth();
   const acceptProposal = useAcceptProposal();
   const rejectProposal = useRejectProposal();
   const counterProposal = useCounterProposal();
   const [counterAmount, setCounterAmount] = useState<number>(0);
   const [counterMessage, setCounterMessage] = useState('');
   const [selectedProposal, setSelectedProposal] = useState<string | null>(null);
+  const [chatDialogOpen, setChatDialogOpen] = useState(false);
+  const [selectedChatProposal, setSelectedChatProposal] = useState<Proposal | null>(null);
 
   const handleAccept = (proposalId: string) => {
     acceptProposal.mutate(proposalId);
@@ -167,9 +172,23 @@ const ProposalManager: React.FC<ProposalManagerProps> = ({
                   </div>
                 ))}
 
-                {/* Action buttons for latest proposal */}
+                {/* Chat button - available for all proposals */}
+                <div className="flex gap-2 pt-4">
+                  <Button 
+                    variant="outline" 
+                    onClick={() => {
+                      setSelectedChatProposal(latestProposal);
+                      setChatDialogOpen(true);
+                    }}
+                    className="flex-1"
+                  >
+                    💬 Chat with {providerName}
+                  </Button>
+                </div>
+
+                {/* Action buttons for pending proposals */}
                 {latestProposal.status === 'pending' && (
-                  <div className="flex gap-2 pt-4">
+                  <div className="flex gap-2 pt-2">
                     <Button 
                       onClick={() => handleAccept(latestProposal.id)}
                       disabled={acceptProposal.isPending}
@@ -235,6 +254,24 @@ const ProposalManager: React.FC<ProposalManagerProps> = ({
           );
         })}
       </div>
+
+      {/* Chat Dialog */}
+      {selectedChatProposal && (
+        <ChatDialog
+          open={chatDialogOpen}
+          onOpenChange={setChatDialogOpen}
+          jobId={selectedChatProposal.job_id}
+          jobTitle={jobTitle}
+          providerId={selectedChatProposal.provider_id}
+          clientId={user?.id}
+          proposalId={selectedChatProposal.id}
+          otherParticipant={{
+            id: selectedChatProposal.provider_id,
+            name: selectedChatProposal.profiles?.full_name || 'Unknown Provider',
+            avatar_url: undefined // Could be added to profile data later
+          }}
+        />
+      )}
     </div>
   );
 };
