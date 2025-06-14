@@ -11,10 +11,10 @@ import { toast } from '@/hooks/use-toast';
 
 interface JobCardProps {
   job: Job;
-  onStartChat?: (jobId: string) => void;
+  onOpenChat?: (job: Job) => void;
 }
 
-const JobCard: React.FC<JobCardProps> = ({ job, onStartChat }) => {
+const JobCard: React.FC<JobCardProps> = ({ job, onOpenChat }) => {
   const { user } = useAuth();
   const [userStatus, setUserStatus] = useState<'none' | 'applied' | 'in_contract' | 'completed'>('none');
   const [isLoading, setIsLoading] = useState(false);
@@ -179,8 +179,8 @@ const JobCard: React.FC<JobCardProps> = ({ job, onStartChat }) => {
   };
 
   const handleStartChat = () => {
-    if (onStartChat) {
-      onStartChat(job.id);
+    if (onOpenChat) {
+      onOpenChat(job);
     }
   };
 

@@ -7,8 +7,9 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { useConversationMessages, useSendMessage, useSendNegotiationMessage, useCreateConversation } from '@/hooks/useConversations';
+import { useMessages, useSendMessage } from '@/hooks/useChat';
 import { useAuth } from '@/contexts/AuthContext';
+import { toast } from '@/hooks/use-toast';
 import MessageList from './MessageList';
 import MessageInput from './MessageInput';
 import { MessageCircle } from 'lucide-react';
@@ -16,11 +17,8 @@ import { MessageCircle } from 'lucide-react';
 interface ChatDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  jobId: string;
+  conversationId: string;
   jobTitle: string;
-  providerId: string;
-  clientId: string;
-  proposalId: string;
   otherParticipant: {
     id: string;
     name: string;
@@ -30,42 +28,18 @@ interface ChatDialogProps {
 const ChatDialog: React.FC<ChatDialogProps> = ({ 
   open, 
   onOpenChange, 
-  jobId,
+  conversationId,
   jobTitle,
-  providerId,
-  clientId,
-  proposalId,
   otherParticipant
 }) => {
   const { user } = useAuth();
-  const [conversationId, setConversationId] = useState<string>('');
-  const { data: messages = [], isLoading } = useConversationMessages(conversationId);
+  const { data: messages = [], isLoading } = useMessages(conversationId);
   const sendMessage = useSendMessage();
-  const sendNegotiationMessage = useSendNegotiationMessage();
-  const createConversation = useCreateConversation();
   const messagesEndRef = useRef<HTMLDivElement>(null);
-
-  const isClient = user?.id === clientId;
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
-
-  // Create or get conversation when dialog opens
-  useEffect(() => {
-    if (open && !conversationId) {
-      createConversation.mutate({
-        job_id: jobId,
-        client_id: clientId,
-        provider_id: providerId,
-        proposal_id: proposalId
-      }, {
-        onSuccess: (conversation) => {
-          setConversationId(conversation.id);
-        }
-      });
-    }
-  }, [open, conversationId, jobId, clientId, providerId, proposalId]);
 
   useEffect(() => {
     if (messages.length > 0) {
@@ -81,14 +55,19 @@ const ChatDialog: React.FC<ChatDialogProps> = ({
   ) => {
     try {
       await sendMessage.mutateAsync({
-        conversation_id: conversationId,
+        conversationId,
         content,
-        message_type: messageType,
-        attachment_url: attachmentUrl,
-        negotiation_data: negotiationData
+        messageType,
+        attachmentUrl,
+        negotiationData
       });
     } catch (error) {
       console.error('Failed to send message:', error);
+      toast({
+        title: "Error",
+        description: "Failed to send message. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -99,18 +78,27 @@ const ChatDialog: React.FC<ChatDialogProps> = ({
     negotiationProposalId?: string
   ) => {
     try {
-      // Use the passed proposalId for negotiations, or the original proposalId for new proposals
-      const finalProposalId = negotiationProposalId || (type === 'proposal' ? null : proposalId);
-      console.log('Sending negotiation with proposalId:', finalProposalId);
-      await sendNegotiationMessage.mutateAsync({
-        conversationId,
-        amount,
-        message,
+      // Create negotiation data
+      const negotiationData = {
         type,
-        proposalId: finalProposalId
+        amount,
+        proposalId: negotiationProposalId,
+        status: 'pending'
+      };
+
+      await handleSendMessage(message, 'negotiation', undefined, negotiationData);
+      
+      toast({
+        title: "Proposal Sent!",
+        description: "Your proposal has been sent successfully.",
       });
     } catch (error) {
-      console.error('Failed to send negotiation:', error);
+      console.error('Failed to send negotiation message:', error);
+      toast({
+        title: "Error",
+        description: "Failed to send negotiation message. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -124,7 +112,7 @@ const ChatDialog: React.FC<ChatDialogProps> = ({
               <div className="flex items-center gap-2">
                 <span>{otherParticipant.name}</span>
                 <Badge variant="outline" className="text-xs">
-                  {isClient ? 'Provider' : 'Client'}
+                  Chat
                 </Badge>
               </div>
               <p className="text-sm text-muted-foreground font-normal">
@@ -159,7 +147,7 @@ const ChatDialog: React.FC<ChatDialogProps> = ({
             <MessageInput 
               onSendMessage={handleSendMessage}
               onSendNegotiation={handleSendNegotiation}
-              disabled={sendMessage.isPending || sendNegotiationMessage.isPending}
+              disabled={sendMessage.isPending}
               showNegotiationOptions={true}
               conversationId={conversationId}
             />

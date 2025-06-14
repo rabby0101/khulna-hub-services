@@ -6,20 +6,25 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
 import { Link } from 'react-router-dom';
 import JobCard from './JobCard';
-import ProposalDialog from './ProposalDialog';
+import ChatDialog from './chat/ChatDialog';
+import { useGetOrCreateConversation } from '@/hooks/useChat';
 import { supabase } from '@/integrations/supabase/client';
 
 const RecentJobs = () => {
   const { data: jobs, isLoading } = useJobs();
   const { user } = useAuth();
-  const [selectedJob, setSelectedJob] = useState<any>(null);
-  const [proposalDialogOpen, setProposalDialogOpen] = useState(false);
+  const [chatDialog, setChatDialog] = useState<{
+    open: boolean;
+    job: any;
+    conversation: any;
+  }>({ open: false, job: null, conversation: null });
+  const getOrCreateConversation = useGetOrCreateConversation();
 
-  const handleSendProposal = async (jobId: string) => {
+  const handleOpenChat = async (job: any) => {
     if (!user) {
       toast({
         title: "Please sign in",
-        description: "You need to be logged in to send proposals",
+        description: "You need to be logged in to chat",
         variant: "destructive",
       });
       return;
@@ -35,16 +40,32 @@ const RecentJobs = () => {
     if (!profile || (profile.user_type !== 'provider' && profile.user_type !== 'both')) {
       toast({
         title: "Service Provider Required",
-        description: "You need to be a service provider to send proposals. Enable it in your profile.",
+        description: "You need to be a service provider to chat about jobs.",
         variant: "destructive",
       });
       return;
     }
 
-    const job = jobs?.find(j => j.id === jobId);
-    if (job) {
-      setSelectedJob(job);
-      setProposalDialogOpen(true);
+    // Get or create conversation
+    try {
+      const conversation = await getOrCreateConversation.mutateAsync({
+        jobId: job.id,
+        clientId: job.client_id,
+        providerId: user.id
+      });
+
+      setChatDialog({
+        open: true,
+        job,
+        conversation
+      });
+    } catch (error) {
+      console.error('Error creating conversation:', error);
+      toast({
+        title: "Error",
+        description: "Failed to start chat. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -82,7 +103,7 @@ const RecentJobs = () => {
             <JobCard 
               key={job.id} 
               job={job} 
-              onStartChat={handleSendProposal}
+              onOpenChat={handleOpenChat}
             />
           ))}
         </div>
@@ -97,13 +118,16 @@ const RecentJobs = () => {
           </div>
         )}
 
-        {selectedJob && (
-          <ProposalDialog
-            open={proposalDialogOpen}
-            onOpenChange={setProposalDialogOpen}
-            jobId={selectedJob.id}
-            jobTitle={selectedJob.title}
-            budget={selectedJob.budget}
+        {chatDialog.open && chatDialog.conversation && (
+          <ChatDialog
+            open={chatDialog.open}
+            onOpenChange={(open) => setChatDialog(prev => ({ ...prev, open }))}
+            conversationId={chatDialog.conversation.id}
+            jobTitle={chatDialog.job?.title || ''}
+            otherParticipant={{
+              id: chatDialog.job?.client_id || '',
+              name: chatDialog.job?.profiles?.full_name || 'Client'
+            }}
           />
         )}
       </div>

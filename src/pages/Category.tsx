@@ -10,7 +10,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
 import Header from '@/components/Header';
 import JobCard from '@/components/JobCard';
-import ProposalDialog from '@/components/ProposalDialog';
+import ChatDialog from '@/components/chat/ChatDialog';
+import { useGetOrCreateConversation } from '@/hooks/useChat';
 import { supabase } from '@/integrations/supabase/client';
 
 // Category mapping to match the ServiceCategories component
@@ -31,25 +32,28 @@ const Category = () => {
   const { category } = useParams<{ category: string }>();
   const { data: jobs, isLoading } = useJobs();
   const { user } = useAuth();
-  const [selectedJob, setSelectedJob] = useState<any>(null);
-  const [proposalDialogOpen, setProposalDialogOpen] = useState(false);
+  const [chatDialog, setChatDialog] = useState<{
+    open: boolean;
+    job: any;
+    conversation: any;
+  }>({ open: false, job: null, conversation: null });
+  const getOrCreateConversation = useGetOrCreateConversation();
 
-  const handleSendProposal = async (jobId: string) => {
+  const handleOpenChat = async (job: any) => {
     if (!user) {
       toast({
         title: "Please sign in",
-        description: "You need to be logged in to send proposals",
+        description: "You need to be logged in to chat",
         variant: "destructive",
       });
       return;
     }
 
-    // Check if user is trying to send proposal on their own job
-    const job = jobs?.find(j => j.id === jobId);
+    // Check if user is trying to chat on their own job
     if (job && job.client_id === user.id) {
       toast({
-        title: "Cannot Send Proposal",
-        description: "You cannot send a proposal on your own job posting",
+        title: "Cannot Chat",
+        description: "You cannot chat on your own job posting",
         variant: "destructive",
       });
       return;
@@ -65,15 +69,32 @@ const Category = () => {
     if (!profile || (profile.user_type !== 'provider' && profile.user_type !== 'both')) {
       toast({
         title: "Service Provider Required",
-        description: "You need to be a service provider to send proposals. Enable it in your profile.",
+        description: "You need to be a service provider to chat about jobs.",
         variant: "destructive",
       });
       return;
     }
 
-    if (job) {
-      setSelectedJob(job);
-      setProposalDialogOpen(true);
+    // Get or create conversation
+    try {
+      const conversation = await getOrCreateConversation.mutateAsync({
+        jobId: job.id,
+        clientId: job.client_id,
+        providerId: user.id
+      });
+
+      setChatDialog({
+        open: true,
+        job,
+        conversation
+      });
+    } catch (error) {
+      console.error('Error creating conversation:', error);
+      toast({
+        title: "Error",
+        description: "Failed to start chat. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -120,7 +141,7 @@ const Category = () => {
               <JobCard 
                 key={job.id} 
                 job={job} 
-                onStartChat={handleSendProposal}
+                onOpenChat={handleOpenChat}
               />
             ))}
           </div>
@@ -138,13 +159,16 @@ const Category = () => {
           </div>
         )}
 
-        {selectedJob && (
-          <ProposalDialog
-            open={proposalDialogOpen}
-            onOpenChange={setProposalDialogOpen}
-            jobId={selectedJob.id}
-            jobTitle={selectedJob.title}
-            budget={selectedJob.budget}
+        {chatDialog.open && chatDialog.conversation && (
+          <ChatDialog
+            open={chatDialog.open}
+            onOpenChange={(open) => setChatDialog(prev => ({ ...prev, open }))}
+            conversationId={chatDialog.conversation.id}
+            jobTitle={chatDialog.job?.title || ''}
+            otherParticipant={{
+              id: chatDialog.job?.client_id || '',
+              name: chatDialog.job?.profiles?.full_name || 'Client'
+            }}
           />
         )}
       </div>
