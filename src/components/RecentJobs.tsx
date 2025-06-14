@@ -58,7 +58,7 @@ const RecentJobs = () => {
     );
   }
 
-  const recentJobs = jobs?.slice(0, 6) || [];
+  const recentJobs = jobs?.filter(job => job.status === 'open').slice(0, 6) || [];
 
   return (
     <section className="py-16">
@@ -82,7 +82,7 @@ const RecentJobs = () => {
             <JobCard 
               key={job.id} 
               job={job} 
-              onSendProposal={handleSendProposal}
+              onStartChat={handleSendProposal}
             />
           ))}
         </div>

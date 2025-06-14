@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Message } from '@/hooks/useConversations';
+import { Message } from '@/hooks/useChat';
 import { formatDistanceToNow } from 'date-fns';
 import { useAcceptProposal, useRejectProposal, useCounterProposal } from '@/hooks/useProposalActions';
 import { CheckCircle, XCircle, RefreshCw } from 'lucide-react';

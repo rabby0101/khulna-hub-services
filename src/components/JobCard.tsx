@@ -1,18 +1,191 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { MapPin, Clock, DollarSign } from 'lucide-react';
+import { MapPin, Clock, DollarSign, MessageCircle, Heart, Check, X } from 'lucide-react';
 import { Job } from '@/hooks/useJobs';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/hooks/use-toast';
 
 interface JobCardProps {
   job: Job;
-  onSendProposal?: (jobId: string) => void;
-  showProposalButton?: boolean;
+  onStartChat?: (jobId: string) => void;
 }
 
-const JobCard: React.FC<JobCardProps> = ({ job, onSendProposal, showProposalButton = true }) => {
+const JobCard: React.FC<JobCardProps> = ({ job, onStartChat }) => {
+  const { user } = useAuth();
+  const [userStatus, setUserStatus] = useState<'none' | 'applied' | 'in_contract' | 'completed'>('none');
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Check user's relationship to this job
+  useEffect(() => {
+    const checkUserStatus = async () => {
+      if (!user) return;
+
+      // Check if user has already applied
+      const { data: proposal } = await supabase
+        .from('proposals')
+        .select('status')
+        .eq('job_id', job.id)
+        .eq('provider_id', user.id)
+        .maybeSingle();
+
+      if (proposal) {
+        if (proposal.status === 'accepted') {
+          setUserStatus('in_contract');
+        } else {
+          setUserStatus('applied');
+        }
+        return;
+      }
+
+      // Check if there's an active deal
+      const { data: deal } = await supabase
+        .from('deals')
+        .select('status')
+        .eq('job_id', job.id)
+        .eq('provider_id', user.id)
+        .maybeSingle();
+
+      if (deal) {
+        if (deal.status === 'completed') {
+          setUserStatus('completed');
+        } else {
+          setUserStatus('in_contract');
+        }
+      }
+    };
+
+    checkUserStatus();
+  }, [job.id, user]);
+
+  const handleExpressInterest = async () => {
+    if (!user) {
+      toast({
+        title: "Please sign in",
+        description: "You need to be logged in to express interest",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const { error } = await supabase
+        .from('proposals')
+        .insert({
+          job_id: job.id,
+          provider_id: user.id,
+          amount: job.budget,
+          message: "I'm interested in this job",
+          status: 'pending'
+        });
+
+      if (error) throw error;
+
+      setUserStatus('applied');
+      toast({
+        title: "Interest Expressed!",
+        description: "You can now chat with the client about this job",
+      });
+    } catch (error: any) {
+      console.error('Error expressing interest:', error);
+      if (error.code === '23505') {
+        toast({
+          title: "Already Applied",
+          description: "You have already expressed interest in this job",
+          variant: "destructive",
+        });
+        setUserStatus('applied');
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to express interest. Please try again.",
+          variant: "destructive",
+        });
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleAcceptBudget = async () => {
+    if (!user) return;
+
+    setIsLoading(true);
+    try {
+      // Create a proposal with accepted status
+      const { data: proposal, error: proposalError } = await supabase
+        .from('proposals')
+        .insert({
+          job_id: job.id,
+          provider_id: user.id,
+          amount: job.budget,
+          message: "I accept your budget",
+          status: 'accepted'
+        })
+        .select()
+        .single();
+
+      if (proposalError) throw proposalError;
+
+      // Create a deal
+      const { error: dealError } = await supabase
+        .from('deals')
+        .insert({
+          job_id: job.id,
+          client_id: job.client_id,
+          provider_id: user.id,
+          proposal_id: proposal.id,
+          agreed_amount: job.budget,
+          status: 'active'
+        });
+
+      if (dealError) throw dealError;
+
+      // Update job status
+      const { error: jobError } = await supabase
+        .from('jobs')
+        .update({ status: 'in_progress' })
+        .eq('id', job.id);
+
+      if (jobError) throw jobError;
+
+      setUserStatus('in_contract');
+      toast({
+        title: "Budget Accepted!",
+        description: "A deal has been created. You can now start working on this project.",
+      });
+    } catch (error: any) {
+      console.error('Error accepting budget:', error);
+      if (error.code === '23505') {
+        toast({
+          title: "Already Applied",
+          description: "You have already applied for this job",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to accept budget. Please try again.",
+          variant: "destructive",
+        });
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleStartChat = () => {
+    if (onStartChat) {
+      onStartChat(job.id);
+    }
+  };
+
+  const isOwnJob = user?.id === job.client_id;
+
   return (
     <Card className="hover-scale cursor-pointer group border border-border hover:shadow-lg transition-all duration-300">
       <CardContent className="p-6">
@@ -20,11 +193,28 @@ const JobCard: React.FC<JobCardProps> = ({ job, onSendProposal, showProposalButt
           <Badge variant={job.urgent ? "destructive" : "secondary"} className="text-xs">
             {job.category}
           </Badge>
-          {job.urgent && (
-            <Badge variant="destructive" className="text-xs">
-              Urgent
-            </Badge>
-          )}
+          <div className="flex gap-2">
+            {job.urgent && (
+              <Badge variant="destructive" className="text-xs">
+                Urgent
+              </Badge>
+            )}
+            {userStatus === 'applied' && (
+              <Badge variant="outline" className="text-xs">
+                Applied
+              </Badge>
+            )}
+            {userStatus === 'in_contract' && (
+              <Badge variant="default" className="text-xs bg-green-100 text-green-800">
+                In Contract
+              </Badge>
+            )}
+            {userStatus === 'completed' && (
+              <Badge variant="secondary" className="text-xs">
+                Completed
+              </Badge>
+            )}
+          </div>
         </div>
 
         <h3 className="font-semibold text-lg text-foreground mb-3 line-clamp-2 group-hover:text-primary transition-colors">
@@ -46,13 +236,51 @@ const JobCard: React.FC<JobCardProps> = ({ job, onSendProposal, showProposalButt
           </div>
         </div>
 
-        {onSendProposal && showProposalButton && (
-          <Button 
-            className="w-full bg-primary text-primary-foreground py-2 px-4 rounded-md hover:bg-primary/90 transition-colors text-sm font-medium"
-            onClick={() => onSendProposal(job.id)}
-          >
-            Send Proposal
-          </Button>
+        {!isOwnJob && job.status === 'open' && (
+          <div className="space-y-2">
+            {userStatus === 'none' && (
+              <div className="flex gap-2">
+                <Button 
+                  variant="outline"
+                  size="sm"
+                  onClick={handleExpressInterest}
+                  disabled={isLoading}
+                  className="flex-1"
+                >
+                  <Heart className="w-4 h-4 mr-1" />
+                  Express Interest
+                </Button>
+                <Button 
+                  size="sm"
+                  onClick={handleAcceptBudget}
+                  disabled={isLoading}
+                  className="flex-1"
+                >
+                  <Check className="w-4 h-4 mr-1" />
+                  Accept Budget
+                </Button>
+              </div>
+            )}
+            
+            {(userStatus === 'applied' || userStatus === 'in_contract') && (
+              <Button 
+                onClick={handleStartChat}
+                disabled={isLoading}
+                className="w-full"
+              >
+                <MessageCircle className="w-4 h-4 mr-1" />
+                Chat
+              </Button>
+            )}
+          </div>
+        )}
+
+        {job.status !== 'open' && (
+          <div className="text-center py-2">
+            <Badge variant="secondary" className="text-xs">
+              {job.status === 'in_progress' ? 'In Progress' : 'Closed'}
+            </Badge>
+          </div>
         )}
       </CardContent>
     </Card>

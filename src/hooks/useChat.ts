@@ -25,6 +25,7 @@ export interface Message {
   content: string;
   message_type: string;
   attachment_url?: string;
+  negotiation_data?: any;
   read_at?: string;
   created_at: string;
   sender_profile?: any;
@@ -149,11 +150,15 @@ export const useSendMessage = () => {
     mutationFn: async ({ 
       conversationId, 
       content, 
-      messageType = 'text' 
+      messageType = 'text',
+      attachmentUrl,
+      negotiationData
     }: { 
       conversationId: string; 
       content: string; 
-      messageType?: string; 
+      messageType?: string;
+      attachmentUrl?: string;
+      negotiationData?: any;
     }) => {
       const { data, error } = await supabase
         .from('messages')
@@ -161,6 +166,8 @@ export const useSendMessage = () => {
           conversation_id: conversationId,
           content,
           message_type: messageType,
+          attachment_url: attachmentUrl,
+          negotiation_data: negotiationData,
           sender_id: (await supabase.auth.getUser()).data.user?.id
         })
         .select()

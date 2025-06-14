@@ -8,6 +8,7 @@ import { useJobs } from '@/hooks/useJobs';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
 import Header from '@/components/Header';
+import JobCard from '@/components/JobCard';
 import ProposalDialog from '@/components/ProposalDialog';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -82,59 +83,16 @@ const BrowseJobs = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {jobs?.map((job) => (
-            <Card key={job.id} className="hover:shadow-lg transition-shadow duration-300">
-              <CardContent className="p-6">
-                <div className="flex justify-between items-start mb-3">
-                  <Badge variant={job.urgent ? "destructive" : "secondary"}>
-                    {job.category}
-                  </Badge>
-                  {job.urgent && (
-                    <Badge variant="destructive" className="text-xs">
-                      Urgent
-                    </Badge>
-                  )}
-                </div>
-
-                <h3 className="font-semibold text-lg text-foreground mb-3 line-clamp-2">
-                  {job.title}
-                </h3>
-
-                <p className="text-sm text-muted-foreground mb-4 line-clamp-3">
-                  {job.description}
-                </p>
-
-                <div className="space-y-2 mb-4">
-                  <div className="flex items-center text-sm text-muted-foreground">
-                    <DollarSign className="w-4 h-4 mr-2" />
-                    <span>৳{job.budget}</span>
-                  </div>
-                  <div className="flex items-center text-sm text-muted-foreground">
-                    <MapPin className="w-4 h-4 mr-2" />
-                    <span>{job.location}</span>
-                  </div>
-                  <div className="flex items-center text-sm text-muted-foreground">
-                    <User className="w-4 h-4 mr-2" />
-                    <span>{job.profiles?.full_name || 'Anonymous'}</span>
-                  </div>
-                  <div className="flex items-center text-sm text-muted-foreground">
-                    <Clock className="w-4 h-4 mr-2" />
-                    <span>{new Date(job.created_at).toLocaleDateString()}</span>
-                  </div>
-                </div>
-
-                <Button 
-                  className="w-full" 
-                  onClick={() => handleSendProposal(job.id)}
-                >
-                  Send Proposal
-                </Button>
-              </CardContent>
-            </Card>
+          {jobs?.filter(job => job.status === 'open').map((job) => (
+            <JobCard 
+              key={job.id} 
+              job={job} 
+              onStartChat={handleSendProposal}
+            />
           ))}
         </div>
 
-        {jobs?.length === 0 && (
+        {jobs?.filter(job => job.status === 'open').length === 0 && (
           <div className="text-center py-12">
             <h3 className="text-xl font-semibold text-foreground mb-2">No jobs available</h3>
             <p className="text-muted-foreground">Check back later for new opportunities!</p>

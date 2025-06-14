@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Message } from '@/hooks/useConversations';
+import { Message } from '@/hooks/useChat';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { formatDistanceToNow } from 'date-fns';
 import ImageMessage from './ImageMessage';

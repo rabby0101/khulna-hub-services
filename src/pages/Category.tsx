@@ -81,7 +81,7 @@ const Category = () => {
   const categoryName = category ? categoryMapping[category] || category : '';
   
   const categoryJobs = jobs?.filter(job => 
-    job.category === categoryName
+    job.category === categoryName && job.status === 'open'
   ) || [];
 
   const displayCategoryName = categoryName.replace(/&/g, 'and');
@@ -120,8 +120,7 @@ const Category = () => {
               <JobCard 
                 key={job.id} 
                 job={job} 
-                onSendProposal={handleSendProposal}
-                showProposalButton={job.client_id !== user?.id}
+                onStartChat={handleSendProposal}
               />
             ))}
           </div>
