@@ -8,6 +8,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { useAcceptProposal, useRejectProposal } from '@/hooks/useProposalActions';
 import { useCreateDeal } from '@/hooks/useJobActions';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import { CheckCircle, XCircle, RefreshCw } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
@@ -50,12 +51,37 @@ const NegotiationMessage: React.FC<NegotiationMessageProps> = ({
     }
 
     try {
+      // For chat-based negotiations, we need to create a proposal first, then a deal
+      let actualProposalId = proposalId;
+      
+      if (!actualProposalId) {
+        // Create a proposal record for this negotiation
+        const { data: newProposal, error: proposalError } = await supabase
+          .from('proposals')
+          .insert({
+            job_id: jobId,
+            provider_id: providerId,
+            amount: amount,
+            message: message.content || 'Proposal from chat negotiation',
+            status: 'accepted'
+          })
+          .select()
+          .single();
+        
+        if (proposalError) {
+          console.error('Error creating proposal:', proposalError);
+          throw proposalError;
+        }
+        
+        actualProposalId = newProposal.id;
+      }
+
       // Create a deal when accepting an offer
       await createDeal.mutateAsync({
         jobId,
         clientId,
         providerId,
-        proposalId: proposalId || message.id,
+        proposalId: actualProposalId,
         agreedAmount: amount
       });
       
