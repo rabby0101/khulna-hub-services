@@ -9,6 +9,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useMessages, useSendMessage } from '@/hooks/useChat';
 import { useAuth } from '@/contexts/AuthContext';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import MessageList from './MessageList';
 import MessageInput from './MessageInput';
@@ -36,6 +38,24 @@ const ChatDialog: React.FC<ChatDialogProps> = ({
   const { data: messages = [], isLoading } = useMessages(conversationId);
   const sendMessage = useSendMessage();
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Get conversation details for negotiation
+  const { data: conversation } = useQuery({
+    queryKey: ['conversation', conversationId],
+    queryFn: async () => {
+      if (!conversationId) return null;
+      
+      const { data, error } = await supabase
+        .from('conversations')
+        .select('*')
+        .eq('id', conversationId)
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!conversationId
+  });
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -138,6 +158,9 @@ const ChatDialog: React.FC<ChatDialogProps> = ({
                 messages={messages} 
                 currentUserId={user?.id || ''} 
                 onSendNegotiation={handleSendNegotiation}
+                jobId={conversation?.job_id}
+                clientId={conversation?.client_id}
+                providerId={conversation?.provider_id}
               />
             )}
             <div ref={messagesEndRef} />

@@ -10,12 +10,18 @@ interface MessageListProps {
   messages: Message[];
   currentUserId: string;
   onSendNegotiation?: (amount: number, message: string, type: string, proposalId?: string) => void;
+  jobId?: string;
+  clientId?: string;
+  providerId?: string;
 }
 
 const MessageList: React.FC<MessageListProps> = ({ 
   messages, 
   currentUserId, 
-  onSendNegotiation 
+  onSendNegotiation,
+  jobId,
+  clientId,
+  providerId
 }) => {
   const [counterOfferDialog, setCounterOfferDialog] = useState<{
     open: boolean;
@@ -58,6 +64,9 @@ const MessageList: React.FC<MessageListProps> = ({
                 message={message}
                 isOwnMessage={isOwnMessage}
                 onCounterOffer={handleCounterOffer}
+                jobId={jobId}
+                clientId={clientId}
+                providerId={providerId}
               />
             );
           }

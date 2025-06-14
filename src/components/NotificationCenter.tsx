@@ -182,11 +182,8 @@ const NotificationCenter = () => {
         <ChatDialog
           open={chatDialogOpen}
           onOpenChange={setChatDialogOpen}
-          jobId={selectedConversation.job_id}
+          conversationId={selectedConversation.id}
           jobTitle={selectedConversation.jobs?.title || 'Unknown Job'}
-          providerId={selectedConversation.provider_id}
-          clientId={selectedConversation.client_id}
-          proposalId={selectedConversation.proposal_id || ''}
           otherParticipant={{
             id: user?.id === selectedConversation.client_id 
               ? selectedConversation.provider_id 

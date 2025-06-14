@@ -8,6 +8,7 @@ import { useAcceptProposal, useRejectProposal } from '@/hooks/useProposalActions
 import { formatDistanceToNow } from 'date-fns';
 import ChatDialog from '@/components/chat/ChatDialog';
 import { useAuth } from '@/contexts/AuthContext';
+import { useGetOrCreateConversation } from '@/hooks/useChat';
 
 interface Proposal {
   id: string;
@@ -37,8 +38,10 @@ const ProposalManager: React.FC<ProposalManagerProps> = ({
   const { user } = useAuth();
   const acceptProposal = useAcceptProposal();
   const rejectProposal = useRejectProposal();
+  const getOrCreateConversation = useGetOrCreateConversation();
   const [chatDialogOpen, setChatDialogOpen] = useState(false);
   const [selectedChatProposal, setSelectedChatProposal] = useState<Proposal | null>(null);
+  const [selectedConversation, setSelectedConversation] = useState<any>(null);
 
   const handleAccept = (proposalId: string) => {
     acceptProposal.mutate(proposalId);
@@ -155,9 +158,19 @@ const ProposalManager: React.FC<ProposalManagerProps> = ({
                 <div className="flex gap-2 pt-4">
                   <Button 
                     variant="outline" 
-                    onClick={() => {
-                      setSelectedChatProposal(latestProposal);
-                      setChatDialogOpen(true);
+                    onClick={async () => {
+                      try {
+                        const conversation = await getOrCreateConversation.mutateAsync({
+                          jobId: latestProposal.job_id,
+                          clientId: user?.id || '',
+                          providerId: latestProposal.provider_id
+                        });
+                        setSelectedChatProposal(latestProposal);
+                        setSelectedConversation(conversation);
+                        setChatDialogOpen(true);
+                      } catch (error) {
+                        console.error('Error creating conversation:', error);
+                      }
                     }}
                     className="flex-1"
                   >
@@ -192,15 +205,12 @@ const ProposalManager: React.FC<ProposalManagerProps> = ({
       </div>
 
       {/* Chat Dialog */}
-      {selectedChatProposal && (
+      {selectedChatProposal && selectedConversation && (
         <ChatDialog
           open={chatDialogOpen}
           onOpenChange={setChatDialogOpen}
-          jobId={selectedChatProposal.job_id}
+          conversationId={selectedConversation.id}
           jobTitle={jobTitle}
-          providerId={selectedChatProposal.provider_id}
-          clientId={user?.id}
-          proposalId={selectedChatProposal.id}
           otherParticipant={{
             id: selectedChatProposal.provider_id,
             name: selectedChatProposal.profiles?.full_name || 'Unknown Provider'

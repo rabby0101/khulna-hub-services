@@ -5,22 +5,33 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Message } from '@/hooks/useChat';
 import { formatDistanceToNow } from 'date-fns';
-import { useAcceptProposal, useRejectProposal, useCounterProposal } from '@/hooks/useProposalActions';
+import { useAcceptProposal, useRejectProposal } from '@/hooks/useProposalActions';
+import { useCreateDeal } from '@/hooks/useJobActions';
+import { useAuth } from '@/contexts/AuthContext';
 import { CheckCircle, XCircle, RefreshCw } from 'lucide-react';
+import { toast } from '@/hooks/use-toast';
 
 interface NegotiationMessageProps {
   message: Message;
   isOwnMessage: boolean;
   onCounterOffer?: (proposalId: string, amount: number) => void;
+  jobId?: string;
+  clientId?: string;
+  providerId?: string;
 }
 
 const NegotiationMessage: React.FC<NegotiationMessageProps> = ({ 
   message, 
   isOwnMessage,
-  onCounterOffer 
+  onCounterOffer,
+  jobId,
+  clientId,
+  providerId
 }) => {
+  const { user } = useAuth();
   const acceptProposal = useAcceptProposal();
   const rejectProposal = useRejectProposal();
+  const createDeal = useCreateDeal();
   
   const negotiationData = message.negotiation_data as any;
   
@@ -28,9 +39,37 @@ const NegotiationMessage: React.FC<NegotiationMessageProps> = ({
 
   const { type, amount, proposalId, status, originalAmount } = negotiationData;
 
-  const handleAccept = () => {
-    if (proposalId) {
-      acceptProposal.mutate(proposalId);
+  const handleAccept = async () => {
+    if (!jobId || !clientId || !providerId) {
+      toast({
+        title: "Error",
+        description: "Missing required information to create deal.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      // Create a deal when accepting an offer
+      await createDeal.mutateAsync({
+        jobId,
+        clientId,
+        providerId,
+        proposalId: proposalId || message.id,
+        agreedAmount: amount
+      });
+      
+      toast({
+        title: "Deal Created!",
+        description: `Deal accepted for ৳${amount}. You can view it in your deals section.`,
+      });
+    } catch (error) {
+      console.error('Error creating deal:', error);
+      toast({
+        title: "Error",
+        description: "Failed to create deal. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 

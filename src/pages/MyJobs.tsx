@@ -6,10 +6,24 @@ import { supabase } from '@/integrations/supabase/client';
 import Header from '@/components/Header';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
+import { Trash2 } from 'lucide-react';
 import ProposalManager from '@/components/ProposalManager';
 import DealManager from '@/components/DealManager';
 import { useJobProposals } from '@/hooks/useProposals';
 import { useMyDeals } from '@/hooks/useDeals';
+import { useDeleteJob } from '@/hooks/useJobActions';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 
 const MyJobs = () => {
   const { user } = useAuth();
@@ -127,21 +141,55 @@ const MyJobs = () => {
 
 const JobWithProposals = ({ job }: { job: any }) => {
   const { data: proposals = [] } = useJobProposals(job.id);
+  const deleteJob = useDeleteJob();
+
+  const handleDeleteJob = () => {
+    deleteJob.mutate(job.id);
+  };
 
   return (
     <Card>
       <CardHeader>
         <CardTitle className="flex justify-between items-start">
-          <div>
-            <h3 className="text-xl font-semibold">{job.title}</h3>
-            <p className="text-sm text-muted-foreground mt-1">
-              Budget: ৳{job.budget} • {job.location}
-            </p>
-          </div>
-          <div className="text-right">
-            <span className="text-sm font-medium">
-              {proposals.length} proposal{proposals.length !== 1 ? 's' : ''}
-            </span>
+          <div className="flex-1">
+            <div className="flex justify-between items-start">
+              <div>
+                <h3 className="text-xl font-semibold">{job.title}</h3>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Budget: ৳{job.budget} • {job.location}
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="text-right">
+                  <span className="text-sm font-medium">
+                    {proposals.length} proposal{proposals.length !== 1 ? 's' : ''}
+                  </span>
+                </div>
+                {job.status === 'open' && (
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="outline" size="sm" className="text-destructive hover:text-destructive">
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Delete Job</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Are you sure you want to delete "{job.title}"? This action cannot be undone and will remove the job from the listings.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleDeleteJob} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                          Delete Job
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                )}
+              </div>
+            </div>
           </div>
         </CardTitle>
       </CardHeader>
