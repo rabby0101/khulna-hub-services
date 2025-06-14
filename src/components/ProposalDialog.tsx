@@ -19,8 +19,7 @@ interface ProposalDialogProps {
   onOpenChange: (open: boolean) => void;
   jobId: string;
   jobTitle: string;
-  budgetMin: number;
-  budgetMax: number;
+  budget: number;
 }
 
 const ProposalDialog = ({ 
@@ -28,45 +27,54 @@ const ProposalDialog = ({
   onOpenChange, 
   jobId, 
   jobTitle, 
-  budgetMin, 
-  budgetMax 
+  budget 
 }: ProposalDialogProps) => {
-  const [amount, setAmount] = useState('');
   const [message, setMessage] = useState('');
   const createProposal = useCreateProposal();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    const proposalAmount = parseInt(amount);
-    if (!proposalAmount || proposalAmount < budgetMin || proposalAmount > budgetMax) {
-      toast({
-        title: "Invalid Amount",
-        description: `Please enter an amount between ৳${budgetMin} and ৳${budgetMax}`,
-        variant: "destructive",
-      });
-      return;
-    }
-
+  const handleAcceptBudget = async () => {
     try {
       await createProposal.mutateAsync({
         job_id: jobId,
-        amount: proposalAmount,
-        message: message.trim() || undefined,
+        amount: budget,
+        message: message.trim() || 'I accept your budget and am ready to start working on this project.',
       });
 
       toast({
-        title: "Proposal Sent!",
-        description: "Your proposal has been submitted successfully",
+        title: "Budget Accepted!",
+        description: "You've accepted the job budget. The client will be notified.",
       });
 
-      setAmount('');
       setMessage('');
       onOpenChange(false);
     } catch (error: any) {
       toast({
         title: "Error",
-        description: error.message || "Failed to send proposal",
+        description: error.message || "Failed to accept budget",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleNegotiate = async () => {
+    try {
+      await createProposal.mutateAsync({
+        job_id: jobId,
+        amount: budget,
+        message: message.trim() || 'I\'m interested in this project. Let\'s discuss the details.',
+      });
+
+      toast({
+        title: "Interest Expressed!",
+        description: "Your interest has been sent. You can now chat with the client to negotiate.",
+      });
+
+      setMessage('');
+      onOpenChange(false);
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to express interest",
         variant: "destructive",
       });
     }
@@ -78,43 +86,29 @@ const ProposalDialog = ({
         <DialogHeader>
           <DialogTitle>Send Proposal</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="space-y-4">
           <div>
             <Label className="text-sm font-medium text-muted-foreground">Job</Label>
             <p className="text-sm font-semibold">{jobTitle}</p>
           </div>
           
           <div>
-            <Label className="text-sm font-medium text-muted-foreground">Budget Range</Label>
-            <p className="text-sm">৳{budgetMin} - ৳{budgetMax}</p>
+            <Label className="text-sm font-medium text-muted-foreground">Client's Budget</Label>
+            <p className="text-xl font-bold text-primary">৳{budget}</p>
           </div>
 
           <div>
-            <Label htmlFor="amount">Your Bid Amount (৳)</Label>
-            <Input
-              id="amount"
-              type="number"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              placeholder={`Enter amount between ${budgetMin} - ${budgetMax}`}
-              min={budgetMin}
-              max={budgetMax}
-              required
-            />
-          </div>
-
-          <div>
-            <Label htmlFor="message">Cover Letter (Optional)</Label>
+            <Label htmlFor="message">Message (Optional)</Label>
             <Textarea
               id="message"
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               placeholder="Tell the client why you're the best fit for this job..."
-              rows={4}
+              rows={3}
             />
           </div>
 
-          <DialogFooter>
+          <DialogFooter className="flex gap-2">
             <Button 
               type="button" 
               variant="outline" 
@@ -123,13 +117,24 @@ const ProposalDialog = ({
               Cancel
             </Button>
             <Button 
-              type="submit" 
+              type="button"
+              variant="outline"
+              onClick={handleNegotiate}
               disabled={createProposal.isPending}
+              className="flex-1"
             >
-              {createProposal.isPending ? 'Sending...' : 'Send Proposal'}
+              {createProposal.isPending ? 'Sending...' : 'Express Interest & Chat'}
+            </Button>
+            <Button 
+              type="button"
+              onClick={handleAcceptBudget}
+              disabled={createProposal.isPending}
+              className="flex-1"
+            >
+              {createProposal.isPending ? 'Accepting...' : 'Accept Budget'}
             </Button>
           </DialogFooter>
-        </form>
+        </div>
       </DialogContent>
     </Dialog>
   );

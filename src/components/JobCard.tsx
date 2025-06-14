@@ -34,7 +34,7 @@ const JobCard: React.FC<JobCardProps> = ({ job, onSendProposal, showProposalButt
         <div className="space-y-2 mb-4">
           <div className="flex items-center text-sm text-muted-foreground">
             <DollarSign className="w-4 h-4 mr-2" />
-            <span>৳{job.budget_min}{job.budget_max > job.budget_min ? ` - ৳${job.budget_max}` : ''}</span>
+            <span>৳{job.budget}</span>
           </div>
           <div className="flex items-center text-sm text-muted-foreground">
             <MapPin className="w-4 h-4 mr-2" />

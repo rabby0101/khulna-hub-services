@@ -103,8 +103,7 @@ const RecentJobs = () => {
             onOpenChange={setProposalDialogOpen}
             jobId={selectedJob.id}
             jobTitle={selectedJob.title}
-            budgetMin={selectedJob.budget_min}
-            budgetMax={selectedJob.budget_max}
+            budget={selectedJob.budget}
           />
         )}
       </div>

@@ -3,11 +3,8 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Separator } from '@/components/ui/separator';
-import { useAcceptProposal, useRejectProposal, useCounterProposal } from '@/hooks/useProposalActions';
+import { useAcceptProposal, useRejectProposal } from '@/hooks/useProposalActions';
 import { formatDistanceToNow } from 'date-fns';
 import ChatDialog from '@/components/chat/ChatDialog';
 import { useAuth } from '@/contexts/AuthContext';
@@ -29,23 +26,17 @@ interface Proposal {
 interface ProposalManagerProps {
   proposals: Proposal[];
   jobTitle: string;
-  originalBudgetMin: number;
-  originalBudgetMax: number;
+  originalBudget: number;
 }
 
 const ProposalManager: React.FC<ProposalManagerProps> = ({ 
   proposals, 
   jobTitle, 
-  originalBudgetMin, 
-  originalBudgetMax 
+  originalBudget 
 }) => {
   const { user } = useAuth();
   const acceptProposal = useAcceptProposal();
   const rejectProposal = useRejectProposal();
-  const counterProposal = useCounterProposal();
-  const [counterAmount, setCounterAmount] = useState<number>(0);
-  const [counterMessage, setCounterMessage] = useState('');
-  const [selectedProposal, setSelectedProposal] = useState<string | null>(null);
   const [chatDialogOpen, setChatDialogOpen] = useState(false);
   const [selectedChatProposal, setSelectedChatProposal] = useState<Proposal | null>(null);
 
@@ -57,18 +48,6 @@ const ProposalManager: React.FC<ProposalManagerProps> = ({
     rejectProposal.mutate(proposalId);
   };
 
-  const handleCounter = (proposalId: string) => {
-    if (counterAmount > 0) {
-      counterProposal.mutate({
-        proposalId,
-        newAmount: counterAmount,
-        message: counterMessage
-      });
-      setCounterAmount(0);
-      setCounterMessage('');
-      setSelectedProposal(null);
-    }
-  };
 
   // Group proposals by provider to show chains
   const proposalChains = proposals.reduce((chains: { [key: string]: Proposal[] }, proposal) => {
@@ -113,7 +92,7 @@ const ProposalManager: React.FC<ProposalManagerProps> = ({
         <div>
           <h3 className="text-lg font-semibold">Proposals for "{jobTitle}"</h3>
           <p className="text-sm text-muted-foreground">
-            Budget Range: ৳{originalBudgetMin} - ৳{originalBudgetMax}
+            Client Budget: ৳{originalBudget}
           </p>
         </div>
         <div className="flex gap-2">
@@ -196,49 +175,6 @@ const ProposalManager: React.FC<ProposalManagerProps> = ({
                     >
                       Accept ৳{latestProposal.amount}
                     </Button>
-                    
-                    <Dialog>
-                      <DialogTrigger asChild>
-                        <Button 
-                          variant="outline" 
-                          onClick={() => setSelectedProposal(latestProposal.id)}
-                          className="flex-1"
-                        >
-                          Counter Offer
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent>
-                        <DialogHeader>
-                          <DialogTitle>Counter Proposal</DialogTitle>
-                        </DialogHeader>
-                        <div className="space-y-4">
-                          <div>
-                            <label className="text-sm font-medium">Counter Amount (৳)</label>
-                            <Input
-                              type="number"
-                              placeholder="Enter your counter amount"
-                              value={counterAmount || ''}
-                              onChange={(e) => setCounterAmount(parseInt(e.target.value) || 0)}
-                            />
-                          </div>
-                          <div>
-                            <label className="text-sm font-medium">Message (Optional)</label>
-                            <Textarea
-                              placeholder="Explain your counter offer..."
-                              value={counterMessage}
-                              onChange={(e) => setCounterMessage(e.target.value)}
-                            />
-                          </div>
-                          <Button 
-                            onClick={() => handleCounter(latestProposal.id)}
-                            disabled={counterProposal.isPending || counterAmount <= 0}
-                            className="w-full"
-                          >
-                            Send Counter Proposal
-                          </Button>
-                        </div>
-                      </DialogContent>
-                    </Dialog>
                     
                     <Button 
                       variant="destructive" 

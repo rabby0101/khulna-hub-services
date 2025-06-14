@@ -35,8 +35,7 @@ const PostJob = () => {
     title: '',
     description: '',
     category: '',
-    budget_min: '',
-    budget_max: '',
+    budget: '',
     location: '',
     urgent: false
   });
@@ -50,7 +49,7 @@ const PostJob = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.title || !formData.description || !formData.category || !formData.budget_min || !formData.location) {
+    if (!formData.title || !formData.description || !formData.category || !formData.budget || !formData.location) {
       toast({
         title: "Error",
         description: "Please fill in all required fields",
@@ -64,8 +63,7 @@ const PostJob = () => {
         title: formData.title,
         description: formData.description,
         category: formData.category,
-        budget_min: Number(formData.budget_min),
-        budget_max: Number(formData.budget_max) || Number(formData.budget_min),
+        budget: Number(formData.budget),
         location: formData.location,
         urgent: formData.urgent,
         status: 'open'
@@ -136,28 +134,16 @@ const PostJob = () => {
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="budget_min">Minimum Budget (৳) *</Label>
-                    <Input
-                      id="budget_min"
-                      type="number"
-                      placeholder="500"
-                      value={formData.budget_min}
-                      onChange={(e) => setFormData({ ...formData, budget_min: e.target.value })}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="budget_max">Maximum Budget (৳)</Label>
-                    <Input
-                      id="budget_max"
-                      type="number"
-                      placeholder="1000"
-                      value={formData.budget_max}
-                      onChange={(e) => setFormData({ ...formData, budget_max: e.target.value })}
-                    />
-                  </div>
+                <div className="space-y-2">
+                  <Label htmlFor="budget">Budget (৳) *</Label>
+                  <Input
+                    id="budget"
+                    type="number"
+                    placeholder="1000"
+                    value={formData.budget}
+                    onChange={(e) => setFormData({ ...formData, budget: e.target.value })}
+                    required
+                  />
                 </div>
 
                 <div className="space-y-2">

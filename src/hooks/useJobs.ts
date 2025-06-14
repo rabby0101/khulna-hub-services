@@ -8,8 +8,7 @@ export interface Job {
   title: string;
   description: string;
   category: string;
-  budget_min: number;
-  budget_max: number;
+  budget: number;
   location: string;
   status: string;
   urgent: boolean;

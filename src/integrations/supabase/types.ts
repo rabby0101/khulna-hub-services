@@ -186,8 +186,7 @@ export type Database = {
       }
       jobs: {
         Row: {
-          budget_max: number
-          budget_min: number
+          budget: number
           category: string
           client_id: string
           created_at: string
@@ -200,8 +199,7 @@ export type Database = {
           urgent: boolean | null
         }
         Insert: {
-          budget_max: number
-          budget_min: number
+          budget: number
           category: string
           client_id: string
           created_at?: string
@@ -214,8 +212,7 @@ export type Database = {
           urgent?: boolean | null
         }
         Update: {
-          budget_max?: number
-          budget_min?: number
+          budget?: number
           category?: string
           client_id?: string
           created_at?: string

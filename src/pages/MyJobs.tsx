@@ -135,7 +135,7 @@ const JobWithProposals = ({ job }: { job: any }) => {
           <div>
             <h3 className="text-xl font-semibold">{job.title}</h3>
             <p className="text-sm text-muted-foreground mt-1">
-              Budget: ৳{job.budget_min} - ৳{job.budget_max} • {job.location}
+              Budget: ৳{job.budget} • {job.location}
             </p>
           </div>
           <div className="text-right">
@@ -159,8 +159,7 @@ const JobWithProposals = ({ job }: { job: any }) => {
             <ProposalManager 
               proposals={proposals}
               jobTitle={job.title}
-              originalBudgetMin={job.budget_min}
-              originalBudgetMax={job.budget_max}
+              originalBudget={job.budget}
             />
           </TabsContent>
           
