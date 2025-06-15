@@ -1,26 +1,33 @@
+
 import React, { useState, KeyboardEvent } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { MessageCircle, DollarSign } from 'lucide-react';
 import ImageUpload from './ImageUpload';
-import CounterOfferDialog from './CounterOfferDialog';
+import OfferForm, { OfferData } from './OfferForm';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
 interface MessageInputProps {
   onSendMessage: (content: string, messageType?: string, attachmentUrl?: string, negotiationData?: any) => void;
-  onSendNegotiation?: (amount: number, message: string, type: string, proposalId?: string) => void;
+  onSendOffer?: (offerData: OfferData) => void;
   disabled?: boolean;
-  showNegotiationOptions?: boolean;
+  showOfferButton?: boolean;
   conversationId?: string;
 }
 
 const MessageInput: React.FC<MessageInputProps> = ({ 
   onSendMessage, 
-  onSendNegotiation,
+  onSendOffer,
   disabled,
-  showNegotiationOptions = false 
+  showOfferButton = true 
 }) => {
   const [message, setMessage] = useState('');
-  const [showCounterDialog, setShowCounterDialog] = useState(false);
+  const [showOfferDialog, setShowOfferDialog] = useState(false);
 
   const handleSend = () => {
     if (message.trim() && !disabled) {
@@ -34,10 +41,11 @@ const MessageInput: React.FC<MessageInputProps> = ({
     setMessage('');
   };
 
-  const handleSendProposal = (amount: number, proposalMessage: string) => {
-    if (onSendNegotiation) {
-      onSendNegotiation(amount, proposalMessage, 'proposal');
+  const handleSendOffer = (offerData: OfferData) => {
+    if (onSendOffer) {
+      onSendOffer(offerData);
     }
+    setShowOfferDialog(false);
   };
 
   const handleKeyPress = (e: KeyboardEvent<HTMLTextAreaElement>) => {
@@ -75,29 +83,34 @@ const MessageInput: React.FC<MessageInputProps> = ({
           </div>
         </div>
         
-        {showNegotiationOptions && (
+        {showOfferButton && (
           <div className="flex gap-2">
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setShowCounterDialog(true)}
+              onClick={() => setShowOfferDialog(true)}
               disabled={disabled}
               className="flex-1"
             >
               <DollarSign className="h-4 w-4 mr-1" />
-              Make Proposal
+              Send Offer
             </Button>
           </div>
         )}
       </div>
 
-      <CounterOfferDialog
-        open={showCounterDialog}
-        onOpenChange={setShowCounterDialog}
-        currentAmount={0}
-        onSubmit={handleSendProposal}
-        isLoading={disabled}
-      />
+      <Dialog open={showOfferDialog} onOpenChange={setShowOfferDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Send Custom Offer</DialogTitle>
+          </DialogHeader>
+          <OfferForm
+            onSubmit={handleSendOffer}
+            onCancel={() => setShowOfferDialog(false)}
+            isLoading={disabled}
+          />
+        </DialogContent>
+      </Dialog>
     </>
   );
 };

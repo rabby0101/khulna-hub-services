@@ -1,52 +1,82 @@
+
 import React, { useState } from 'react';
 import { Message } from '@/hooks/useChat';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { formatDistanceToNow } from 'date-fns';
 import ImageMessage from './ImageMessage';
 import NegotiationMessage from './NegotiationMessage';
-import CounterOfferDialog from './CounterOfferDialog';
+import OfferMessage from './OfferMessage';
+import JobPreview from './JobPreview';
+import DealSummary from './DealSummary';
+import OfferForm, { OfferData } from './OfferForm';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
 interface MessageListProps {
   messages: Message[];
   currentUserId: string;
-  onSendNegotiation?: (amount: number, message: string, type: string, proposalId?: string) => void;
+  onSendOffer?: (offerData: OfferData) => void;
+  onAcceptOffer?: (messageId: string) => void;
+  onRejectOffer?: (messageId: string) => void;
   jobId?: string;
   clientId?: string;
   providerId?: string;
+  jobData?: any;
+  dealData?: any;
 }
 
 const MessageList: React.FC<MessageListProps> = ({ 
   messages, 
   currentUserId, 
-  onSendNegotiation,
+  onSendOffer,
+  onAcceptOffer,
+  onRejectOffer,
   jobId,
   clientId,
-  providerId
+  providerId,
+  jobData,
+  dealData
 }) => {
   const [counterOfferDialog, setCounterOfferDialog] = useState<{
     open: boolean;
-    proposalId: string;
-    amount: number;
-  }>({ open: false, proposalId: '', amount: 0 });
+    message: Message | null;
+  }>({ open: false, message: null });
 
-  const handleCounterOffer = (proposalId: string, amount: number) => {
-    setCounterOfferDialog({ open: true, proposalId, amount });
+  const handleCounterOffer = (message: Message) => {
+    setCounterOfferDialog({ open: true, message });
   };
 
-  const handleSendCounterOffer = (amount: number, message: string) => {
-    if (onSendNegotiation && counterOfferDialog.proposalId) {
-      onSendNegotiation(amount, message, 'counter_offer', counterOfferDialog.proposalId);
+  const handleSendCounterOffer = (offerData: OfferData) => {
+    if (onSendOffer) {
+      onSendOffer(offerData);
     }
-    setCounterOfferDialog({ open: false, proposalId: '', amount: 0 });
+    setCounterOfferDialog({ open: false, message: null });
   };
 
   return (
     <>
       <div className="space-y-4">
+        {/* Job Preview - shown at the top */}
+        {jobData && (
+          <JobPreview job={jobData} />
+        )}
+
+        {/* Deal Summary - shown when deal exists */}
+        {dealData && (
+          <DealSummary 
+            deal={dealData}
+            isProvider={currentUserId === providerId}
+          />
+        )}
+
         {messages.map((message) => {
           const isOwnMessage = message.sender_id === currentUserId;
           
-          // Handle different message types
+          // Handle image messages
           if (message.message_type === 'image') {
             return (
               <ImageMessage
@@ -57,13 +87,27 @@ const MessageList: React.FC<MessageListProps> = ({
             );
           }
           
+          // Handle offer messages (new format)
+          if (message.negotiation_data && message.negotiation_data.serviceDescription) {
+            return (
+              <OfferMessage
+                key={message.id}
+                message={message}
+                isOwnMessage={isOwnMessage}
+                onAccept={() => onAcceptOffer?.(message.id)}
+                onReject={() => onRejectOffer?.(message.id)}
+                onCounter={() => handleCounterOffer(message)}
+              />
+            );
+          }
+          
+          // Handle legacy negotiation messages
           if (message.negotiation_data) {
             return (
               <NegotiationMessage
                 key={message.id}
                 message={message}
                 isOwnMessage={isOwnMessage}
-                onCounterOffer={handleCounterOffer}
                 jobId={jobId}
                 clientId={clientId}
                 providerId={providerId}
@@ -104,12 +148,24 @@ const MessageList: React.FC<MessageListProps> = ({
         })}
       </div>
 
-      <CounterOfferDialog
-        open={counterOfferDialog.open}
+      <Dialog 
+        open={counterOfferDialog.open} 
         onOpenChange={(open) => setCounterOfferDialog(prev => ({ ...prev, open }))}
-        currentAmount={counterOfferDialog.amount}
-        onSubmit={handleSendCounterOffer}
-      />
+      >
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Send Counter Offer</DialogTitle>
+          </DialogHeader>
+          {counterOfferDialog.message && (
+            <OfferForm
+              onSubmit={handleSendCounterOffer}
+              onCancel={() => setCounterOfferDialog({ open: false, message: null })}
+              initialData={counterOfferDialog.message.negotiation_data}
+              isCounterOffer={true}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </>
   );
 };
