@@ -173,27 +173,12 @@ const ChatDialog: React.FC<ChatDialogProps> = ({
 
       const offerData = message.negotiation_data;
       
-      // Create a proposal record first
-      const { data: newProposal, error: proposalError } = await supabase
-        .from('proposals')
-        .insert({
-          job_id: conversation.job_id,
-          provider_id: conversation.provider_id,
-          amount: offerData.proposedCost,
-          message: offerData.serviceDescription,
-          status: 'accepted'
-        })
-        .select()
-        .single();
-      
-      if (proposalError) throw proposalError;
-
-      // Create the deal
+      // Create the deal directly without creating a proposal first
       await createDeal.mutateAsync({
         jobId: conversation.job_id,
         clientId: conversation.client_id,
         providerId: conversation.provider_id,
-        proposalId: newProposal.id,
+        proposalId: null, // We'll set this to null since this is a chat-based deal
         agreedAmount: offerData.proposedCost
       });
 

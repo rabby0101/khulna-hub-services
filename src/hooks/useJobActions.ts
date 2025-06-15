@@ -1,3 +1,4 @@
+
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
@@ -47,7 +48,7 @@ export const useCreateDeal = () => {
       jobId: string;
       clientId: string;
       providerId: string;
-      proposalId: string;
+      proposalId: string | null;
       agreedAmount: number;
     }) => {
       const { data, error } = await supabase
