@@ -127,7 +127,7 @@ export type Database = {
           created_at: string
           id: string
           job_id: string
-          proposal_id: string
+          proposal_id: string | null
           provider_id: string
           status: string
         }
@@ -138,7 +138,7 @@ export type Database = {
           created_at?: string
           id?: string
           job_id: string
-          proposal_id: string
+          proposal_id?: string | null
           provider_id: string
           status?: string
         }
@@ -149,7 +149,7 @@ export type Database = {
           created_at?: string
           id?: string
           job_id?: string
-          proposal_id?: string
+          proposal_id?: string | null
           provider_id?: string
           status?: string
         }
