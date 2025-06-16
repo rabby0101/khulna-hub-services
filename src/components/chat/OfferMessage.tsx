@@ -128,7 +128,7 @@ const OfferMessage: React.FC<OfferMessageProps> = ({
             )}
           </div>
 
-          {/* Action buttons for received offers */}
+          {/* Action buttons - only show for received offers (not own messages) and when status is pending */}
           {!isOwnMessage && status === 'pending' && (
             <div className="flex gap-2 pt-2">
               <Button
