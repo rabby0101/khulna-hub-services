@@ -18,11 +18,23 @@ const JobCard: React.FC<JobCardProps> = ({ job, onOpenChat }) => {
   const { user } = useAuth();
   const [userStatus, setUserStatus] = useState<'none' | 'applied' | 'in_contract' | 'completed'>('none');
   const [isLoading, setIsLoading] = useState(false);
+  const [userType, setUserType] = useState<string | null>(null);
 
-  // Check user's relationship to this job
+  // Check user's relationship to this job and get user type
   useEffect(() => {
     const checkUserStatus = async () => {
       if (!user) return;
+
+      // Get user profile to check user type
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('user_type')
+        .eq('id', user.id)
+        .single();
+
+      if (profile) {
+        setUserType(profile.user_type);
+      }
 
       // Check if user has already applied
       const { data: proposal } = await supabase
@@ -71,6 +83,16 @@ const JobCard: React.FC<JobCardProps> = ({ job, onOpenChat }) => {
       return;
     }
 
+    // Check if user is a service provider
+    if (userType !== 'provider' && userType !== 'both') {
+      toast({
+        title: "Service Provider Required",
+        description: "You need to be a service provider to express interest in jobs.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsLoading(true);
     try {
       const { error } = await supabase
@@ -113,6 +135,16 @@ const JobCard: React.FC<JobCardProps> = ({ job, onOpenChat }) => {
 
   const handleAcceptBudget = async () => {
     if (!user) return;
+
+    // Check if user is a service provider
+    if (userType !== 'provider' && userType !== 'both') {
+      toast({
+        title: "Service Provider Required",
+        description: "You need to be a service provider to accept job budgets.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     setIsLoading(true);
     try {
@@ -185,6 +217,7 @@ const JobCard: React.FC<JobCardProps> = ({ job, onOpenChat }) => {
   };
 
   const isOwnJob = user?.id === job.client_id;
+  const isServiceProvider = userType === 'provider' || userType === 'both';
 
   return (
     <Card className="hover-scale cursor-pointer group border border-border hover:shadow-lg transition-all duration-300">
@@ -236,7 +269,7 @@ const JobCard: React.FC<JobCardProps> = ({ job, onOpenChat }) => {
           </div>
         </div>
 
-        {!isOwnJob && job.status === 'open' && (
+        {!isOwnJob && job.status === 'open' && isServiceProvider && (
           <div className="space-y-2">
             {userStatus === 'none' && (
               <div className="flex gap-2">
@@ -272,6 +305,14 @@ const JobCard: React.FC<JobCardProps> = ({ job, onOpenChat }) => {
                 Chat
               </Button>
             )}
+          </div>
+        )}
+
+        {!isOwnJob && job.status === 'open' && !isServiceProvider && (
+          <div className="text-center py-2">
+            <p className="text-sm text-muted-foreground">
+              Enable service provider mode in your profile to apply for jobs
+            </p>
           </div>
         )}
 
