@@ -2,7 +2,7 @@
 import { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'app.lovable.3bf3ea37d3f34c85ab4e881eba0972b9',
+  appId: 'com.khulnahub.services',
   appName: 'khulna-hub-services',
   webDir: 'dist',
   server: {
