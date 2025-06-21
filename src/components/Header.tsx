@@ -3,6 +3,7 @@ import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import ThemeToggle from './ThemeToggle';
 import UserMenu from './UserMenu';
 import NotificationCenter from './NotificationCenter';
@@ -10,6 +11,7 @@ import { HammerIcon, PlusIcon } from 'lucide-react';
 
 const Header = () => {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const navigate = useNavigate();
 
   return (
@@ -27,13 +29,13 @@ const Header = () => {
             to="/jobs"
             className="transition-colors hover:text-foreground/80 text-foreground/60"
           >
-            Browse Jobs
+            {t('header.browseJobs')}
           </Link>
           <Link
             to="/my-jobs"
             className="transition-colors hover:text-foreground/80 text-foreground/60"
           >
-            My Jobs
+            {t('header.myJobs')}
           </Link>
         </nav>
 
@@ -48,13 +50,13 @@ const Header = () => {
                 className="hidden sm:flex"
               >
                 <PlusIcon className="h-4 w-4 mr-2 fill-current" />
-                Post Job
+                {t('header.postJob')}
               </Button>
               <UserMenu />
             </>
           ) : (
             <Button asChild>
-              <Link to="/auth">Sign In</Link>
+              <Link to="/auth">{t('header.signIn')}</Link>
             </Button>
           )}
         </div>
