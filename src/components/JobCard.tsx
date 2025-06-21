@@ -93,43 +93,9 @@ const JobCard: React.FC<JobCardProps> = ({ job, onOpenChat }) => {
       return;
     }
 
-    setIsLoading(true);
-    try {
-      const { error } = await supabase
-        .from('proposals')
-        .insert({
-          job_id: job.id,
-          provider_id: user.id,
-          amount: job.budget,
-          message: "I'm interested in this job",
-          status: 'pending'
-        });
-
-      if (error) throw error;
-
-      setUserStatus('applied');
-      toast({
-        title: "Interest Expressed!",
-        description: "You can now chat with the client about this job",
-      });
-    } catch (error: any) {
-      console.error('Error expressing interest:', error);
-      if (error.code === '23505') {
-        toast({
-          title: "Already Applied",
-          description: "You have already expressed interest in this job",
-          variant: "destructive",
-        });
-        setUserStatus('applied');
-      } else {
-        toast({
-          title: "Error",
-          description: "Failed to express interest. Please try again.",
-          variant: "destructive",
-        });
-      }
-    } finally {
-      setIsLoading(false);
+    // Simply open the chat window instead of creating a proposal
+    if (onOpenChat) {
+      onOpenChat(job);
     }
   };
 
