@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -24,32 +23,32 @@ export const useJobs = () => {
   return useQuery({
     queryKey: ['jobs'],
     queryFn: async () => {
-      console.log('Fetching jobs...');
+      console.log('Fetching active jobs...');
       
-      // First try to get jobs with profile data
+      // First try to get jobs with profile data, filtering for active jobs only
       const { data: jobsWithProfiles, error: profileError } = await supabase
         .from('jobs')
         .select(`
           *,
           profiles!inner(full_name, location)
         `)
-        .eq('status', 'open')
+        .in('status', ['open', 'active'])
         .order('created_at', { ascending: false });
 
       if (jobsWithProfiles && !profileError) {
-        console.log('Jobs with profiles:', jobsWithProfiles);
+        console.log('Active jobs with profiles:', jobsWithProfiles);
         return jobsWithProfiles.map(job => ({
           ...job,
           profiles: job.profiles[0] // Take the first profile since it's a join
         })) as Job[];
       }
 
-      // If that fails, get jobs without profile data
-      console.log('Profile join failed, fetching jobs without profiles...');
+      // If that fails, get jobs without profile data, still filtering for active jobs
+      console.log('Profile join failed, fetching active jobs without profiles...');
       const { data: jobs, error } = await supabase
         .from('jobs')
         .select('*')
-        .eq('status', 'open')
+        .in('status', ['open', 'active'])
         .order('created_at', { ascending: false });
       
       if (error) {
@@ -57,7 +56,7 @@ export const useJobs = () => {
         throw error;
       }
       
-      console.log('Jobs fetched:', jobs);
+      console.log('Active jobs fetched:', jobs);
       return jobs as Job[];
     }
   });

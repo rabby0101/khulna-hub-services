@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -71,6 +72,11 @@ const BrowseJobs = () => {
     }
   };
 
+  // Filter jobs to only show active/open ones, excluding completed and closed jobs
+  const activeJobs = jobs?.filter(job => 
+    job.status === 'open' || job.status === 'active'
+  ) || [];
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background">
@@ -100,10 +106,13 @@ const BrowseJobs = () => {
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-foreground mb-4">Browse Jobs</h1>
           <p className="text-xl text-muted-foreground">Find opportunities to showcase your skills</p>
+          <p className="text-sm text-muted-foreground mt-2">
+            Showing {activeJobs.length} active job{activeJobs.length !== 1 ? 's' : ''}
+          </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {jobs?.filter(job => job.status === 'open').map((job) => (
+          {activeJobs.map((job) => (
             <JobCard 
               key={job.id} 
               job={job} 
@@ -112,9 +121,9 @@ const BrowseJobs = () => {
           ))}
         </div>
 
-        {jobs?.filter(job => job.status === 'open').length === 0 && (
+        {activeJobs.length === 0 && (
           <div className="text-center py-12">
-            <h3 className="text-xl font-semibold text-foreground mb-2">No jobs available</h3>
+            <h3 className="text-xl font-semibold text-foreground mb-2">No active jobs available</h3>
             <p className="text-muted-foreground">Check back later for new opportunities!</p>
           </div>
         )}
