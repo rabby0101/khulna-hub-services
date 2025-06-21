@@ -3,8 +3,8 @@ import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
-import { ThemeToggle } from './ThemeToggle';
-import { UserMenu } from './UserMenu';
+import ThemeToggle from './ThemeToggle';
+import UserMenu from './UserMenu';
 import NotificationCenter from './NotificationCenter';
 import { HammerIcon, PlusIcon } from 'lucide-react';
 
