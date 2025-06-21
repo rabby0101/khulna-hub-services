@@ -1,75 +1,54 @@
 
 import React from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Briefcase, Plus } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { Link, useLocation } from 'react-router-dom';
-import ThemeToggle from './ThemeToggle';
-import UserMenu from './UserMenu';
+import { ThemeToggle } from './ThemeToggle';
+import { UserMenu } from './UserMenu';
 import NotificationCenter from './NotificationCenter';
+import { HammerIcon, PlusIcon } from 'lucide-react';
 
 const Header = () => {
   const { user } = useAuth();
-  const location = useLocation();
+  const navigate = useNavigate();
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container mx-auto px-4 flex h-16 items-center justify-between">
-        <Link to="/" className="flex items-center space-x-2">
-          <Briefcase className="h-8 w-8 text-primary" />
-          <span className="text-xl font-bold">KhulnaJobs</span>
-        </Link>
-
-        <nav className="hidden md:flex items-center space-x-6">
-          <Link 
-            to="/" 
-            className={`text-sm font-medium transition-colors hover:text-primary ${
-              location.pathname === '/' ? 'text-primary' : 'text-muted-foreground'
-            }`}
-          >
-            Home
+      <div className="container flex h-16 items-center">
+        <div className="mr-4 flex">
+          <Link to="/" className="mr-6 flex items-center space-x-2">
+            <HammerIcon className="h-6 w-6 fill-current" />
+            <span className="font-bold text-xl">KajHobe</span>
           </Link>
-          <Link 
-            to="/jobs" 
-            className={`text-sm font-medium transition-colors hover:text-primary ${
-              location.pathname === '/jobs' ? 'text-primary' : 'text-muted-foreground'
-            }`}
+        </div>
+        
+        <nav className="flex items-center space-x-6 text-sm font-medium flex-1">
+          <Link
+            to="/jobs"
+            className="transition-colors hover:text-foreground/80 text-foreground/60"
           >
             Browse Jobs
           </Link>
-          {user && (
-            <>
-              <Link 
-                to="/my-jobs" 
-                className={`text-sm font-medium transition-colors hover:text-primary ${
-                  location.pathname === '/my-jobs' ? 'text-primary' : 'text-muted-foreground'
-                }`}
-              >
-                My Jobs
-              </Link>
-              <Link 
-                to="/profile" 
-                className={`text-sm font-medium transition-colors hover:text-primary ${
-                  location.pathname === '/profile' ? 'text-primary' : 'text-muted-foreground'
-                }`}
-              >
-                Profile
-              </Link>
-            </>
-          )}
+          <Link
+            to="/my-jobs"
+            className="transition-colors hover:text-foreground/80 text-foreground/60"
+          >
+            My Jobs
+          </Link>
         </nav>
 
-        <div className="flex items-center space-x-4">
+        <div className="flex items-center space-x-2">
+          {user && <NotificationCenter />}
           <ThemeToggle />
-          
           {user ? (
             <>
-              <NotificationCenter />
-              <Button asChild size="sm">
-                <Link to="/post-job">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Post Job
-                </Link>
+              <Button 
+                onClick={() => navigate('/post-job')} 
+                size="sm"
+                className="hidden sm:flex"
+              >
+                <PlusIcon className="h-4 w-4 mr-2 fill-current" />
+                Post Job
               </Button>
               <UserMenu />
             </>

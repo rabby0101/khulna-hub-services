@@ -16,6 +16,12 @@ export interface Notification {
   created_at: string;
 }
 
+export interface GroupedNotification extends Notification {
+  count?: number;
+  conversation_id?: string;
+  latest_message_time?: string;
+}
+
 export const useNotifications = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -80,7 +86,54 @@ export const useNotifications = () => {
       }
       
       console.log('Notifications fetched:', data);
-      return data as Notification[];
+      
+      // Group message notifications by conversation
+      const groupedNotifications: GroupedNotification[] = [];
+      const conversationGroups: { [key: string]: Notification[] } = {};
+      
+      data.forEach(notification => {
+        if (notification.type === 'message_received' && notification.related_proposal_id) {
+          const conversationId = notification.related_proposal_id;
+          if (!conversationGroups[conversationId]) {
+            conversationGroups[conversationId] = [];
+          }
+          conversationGroups[conversationId].push(notification);
+        } else {
+          // Non-message notifications are added as-is
+          groupedNotifications.push(notification);
+        }
+      });
+      
+      // Create grouped notifications for conversations
+      Object.entries(conversationGroups).forEach(([conversationId, notifications]) => {
+        const unreadCount = notifications.filter(n => !n.read).length;
+        const latestNotification = notifications[0]; // Already sorted by created_at desc
+        
+        if (unreadCount > 0) {
+          // Only show if there are unread messages
+          groupedNotifications.push({
+            ...latestNotification,
+            count: unreadCount,
+            conversation_id: conversationId,
+            title: unreadCount > 1 ? `${unreadCount} New Messages` : 'New Message',
+            message: unreadCount > 1 
+              ? `You have ${unreadCount} unread messages in this conversation`
+              : latestNotification.message,
+            latest_message_time: latestNotification.created_at
+          });
+        } else if (notifications.some(n => n.read)) {
+          // Show the latest read notification if all are read
+          groupedNotifications.push({
+            ...latestNotification,
+            conversation_id: conversationId
+          });
+        }
+      });
+      
+      // Sort by creation time
+      return groupedNotifications.sort((a, b) => 
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
     },
     enabled: !!user
   });
@@ -100,6 +153,34 @@ export const useMarkNotificationAsRead = () => {
       
       if (error) {
         console.error('Error marking notification as read:', error);
+        throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+    }
+  });
+};
+
+export const useMarkConversationNotificationsAsRead = () => {
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+
+  return useMutation({
+    mutationFn: async (conversationId: string) => {
+      if (!user) throw new Error('Must be logged in');
+      
+      console.log('Marking conversation notifications as read:', conversationId);
+      
+      const { error } = await supabase
+        .from('notifications')
+        .update({ read: true })
+        .eq('user_id', user.id)
+        .eq('related_proposal_id', conversationId)
+        .eq('read', false);
+      
+      if (error) {
+        console.error('Error marking conversation notifications as read:', error);
         throw error;
       }
     },

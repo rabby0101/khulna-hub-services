@@ -1,72 +1,83 @@
 
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Search, MapPin, Plus, Users } from "lucide-react";
-import { Link } from "react-router-dom";
-import { useAuth } from "@/contexts/AuthContext";
+import React from 'react';
+import { Button } from '@/components/ui/button';
+import { ArrowRightIcon, SearchIcon, UsersIcon } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
 
 const HeroSection = () => {
   const { user } = useAuth();
 
   return (
-    <section className="gradient-hero text-white py-16 md:py-24">
-      <div className="container mx-auto px-4 text-center">
-        <div className="max-w-4xl mx-auto">
-          <h1 className="text-4xl md:text-6xl font-bold mb-6 animate-fade-in">
-            Find Trusted Services in <span className="text-accent">Khulna</span>
+    <section className="relative overflow-hidden bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+      <div className="container mx-auto px-4 py-20 sm:py-32">
+        <div className="mx-auto max-w-4xl text-center">
+          <h1 className="text-4xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-6xl">
+            Connect with Local Service Providers in{' '}
+            <span className="gradient-text">Khulna</span>
           </h1>
-          <p className="text-xl md:text-2xl mb-8 text-blue-100 animate-fade-in">
-            Connect with skilled professionals for all your service needs
+          <p className="mt-6 text-lg leading-8 text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+            KajHobe makes it easy to find trusted professionals for home repairs, cleaning, 
+            tutoring, and more. Post your job and get matched with skilled service providers in your area.
           </p>
+          
+          <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
+            {user ? (
+              <>
+                <Button asChild size="lg" className="w-full sm:w-auto">
+                  <Link to="/jobs" className="flex items-center">
+                    <SearchIcon className="h-5 w-5 mr-2 fill-current" />
+                    Browse Jobs
+                  </Link>
+                </Button>
+                <Button asChild variant="outline" size="lg" className="w-full sm:w-auto">
+                  <Link to="/post-job" className="flex items-center">
+                    <ArrowRightIcon className="h-5 w-5 mr-2 fill-current" />
+                    Post a Job
+                  </Link>
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button asChild size="lg" className="w-full sm:w-auto">
+                  <Link to="/auth" className="flex items-center">
+                    Get Started
+                    <ArrowRightIcon className="h-5 w-5 ml-2 fill-current" />
+                  </Link>
+                </Button>
+                <Button asChild variant="outline" size="lg" className="w-full sm:w-auto">
+                  <Link to="/jobs" className="flex items-center">
+                    <SearchIcon className="h-5 w-5 mr-2 fill-current" />
+                    Browse Jobs
+                  </Link>
+                </Button>
+              </>
+            )}
+          </div>
 
-          {/* Search Bar */}
-          <div className="max-w-2xl mx-auto mb-12 animate-fade-in">
-            <div className="relative">
-              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-              <Input
-                placeholder="What service do you need? (e.g., electrician, plumber, tutor)"
-                className="pl-12 pr-4 h-14 text-lg bg-white text-foreground"
-              />
-              <Button className="absolute right-2 top-2 h-10 bg-accent hover:bg-accent/90">
-                Search
-              </Button>
+          <div className="mt-16 grid grid-cols-1 sm:grid-cols-3 gap-8 text-center">
+            <div className="flex flex-col items-center">
+              <div className="rounded-full bg-blue-100 dark:bg-blue-900 p-3 mb-4">
+                <SearchIcon className="h-8 w-8 text-blue-600 dark:text-blue-400 fill-current" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Find Services</h3>
+              <p className="text-gray-600 dark:text-gray-300">Browse available services or post your job requirements</p>
             </div>
             
-            <div className="flex items-center justify-center mt-3 text-blue-100">
-              <MapPin className="w-4 h-4 mr-1" />
-              <span className="text-sm">Serving all areas in Khulna city</span>
+            <div className="flex flex-col items-center">
+              <div className="rounded-full bg-green-100 dark:bg-green-900 p-3 mb-4">
+                <UsersIcon className="h-8 w-8 text-green-600 dark:text-green-400 fill-current" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Connect</h3>
+              <p className="text-gray-600 dark:text-gray-300">Chat with service providers and negotiate terms</p>
             </div>
-          </div>
-
-          {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center animate-fade-in">
-            <Button size="lg" variant="secondary" className="bg-white text-primary hover:bg-gray-100 w-full sm:w-auto" asChild>
-              <Link to={user ? "/post-job" : "/auth"}>
-                <Plus className="w-5 h-5 mr-2" />
-                Post a Job
-              </Link>
-            </Button>
-            <Button size="lg" variant="outline" className="border-white text-white hover:bg-white hover:text-primary w-full sm:w-auto" asChild>
-              <Link to="/jobs">
-                <Users className="w-5 h-5 mr-2" />
-                Browse Services
-              </Link>
-            </Button>
-          </div>
-
-          {/* Stats */}
-          <div className="flex flex-col sm:flex-row justify-center items-center gap-8 mt-16 text-blue-100">
-            <div className="text-center">
-              <div className="text-3xl font-bold text-white">500+</div>
-              <div className="text-sm">Service Providers</div>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl font-bold text-white">2000+</div>
-              <div className="text-sm">Jobs Completed</div>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl font-bold text-white">4.8★</div>
-              <div className="text-sm">Average Rating</div>
+            
+            <div className="flex flex-col items-center">
+              <div className="rounded-full bg-purple-100 dark:bg-purple-900 p-3 mb-4">
+                <ArrowRightIcon className="h-8 w-8 text-purple-600 dark:text-purple-400 fill-current" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Get It Done</h3>
+              <p className="text-gray-600 dark:text-gray-300">Complete your project with trusted local professionals</p>
             </div>
           </div>
         </div>

@@ -10,13 +10,18 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
-import { Bell, CheckCheck, Clock } from 'lucide-react';
-import { useNotifications, useMarkNotificationAsRead, useMarkAllNotificationsAsRead } from '@/hooks/useNotifications';
+import { BellIcon, CheckCheck, Clock } from 'lucide-react';
+import { 
+  useNotifications, 
+  useMarkNotificationAsRead, 
+  useMarkAllNotificationsAsRead,
+  useMarkConversationNotificationsAsRead,
+  type GroupedNotification 
+} from '@/hooks/useNotifications';
 import { formatDistanceToNow } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 import ChatDialog from '@/components/chat/ChatDialog';
 import { useAuth } from '@/contexts/AuthContext';
-import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
 const NotificationCenter = () => {
@@ -24,22 +29,21 @@ const NotificationCenter = () => {
   const { data: notifications = [], isLoading } = useNotifications();
   const markAsRead = useMarkNotificationAsRead();
   const markAllAsRead = useMarkAllNotificationsAsRead();
+  const markConversationAsRead = useMarkConversationNotificationsAsRead();
   const navigate = useNavigate();
   const [chatDialogOpen, setChatDialogOpen] = useState(false);
   const [selectedConversation, setSelectedConversation] = useState<any>(null);
 
-  const unreadCount = notifications.filter(n => !n.read).length;
+  const unreadCount = notifications.filter(n => !n.read || (n.count && n.count > 0)).length;
 
-  const handleNotificationClick = async (notification: any) => {
-    // Mark as read if not already read
-    if (!notification.read) {
-      markAsRead.mutate(notification.id);
-    }
-
+  const handleNotificationClick = async (notification: GroupedNotification) => {
     // Handle message notifications specially - open chat dialog
-    if (notification.type === 'message_received' && notification.related_proposal_id) {
+    if (notification.type === 'message_received' && notification.conversation_id) {
       try {
-        // Get conversation details using the conversation_id stored in related_proposal_id
+        // Mark all notifications for this conversation as read
+        markConversationAsRead.mutate(notification.conversation_id);
+
+        // Get conversation details
         const { data: conversation } = await supabase
           .from('conversations')
           .select(`
@@ -48,7 +52,7 @@ const NotificationCenter = () => {
             client_profile:profiles!conversations_client_id_fkey(id, full_name),
             provider_profile:profiles!conversations_provider_id_fkey(id, full_name)
           `)
-          .eq('id', notification.related_proposal_id)
+          .eq('id', notification.conversation_id)
           .single();
 
         if (conversation) {
@@ -59,17 +63,22 @@ const NotificationCenter = () => {
       } catch (error) {
         console.error('Error fetching conversation:', error);
       }
-    }
+    } else {
+      // Mark as read if not already read
+      if (!notification.read) {
+        markAsRead.mutate(notification.id);
+      }
 
-    // Navigate based on notification type and related data
-    if (notification.related_job_id) {
-      if (notification.type === 'proposal_received' || 
-          notification.type === 'proposal_accepted' || 
-          notification.type === 'proposal_rejected' ||
-          notification.type === 'deal_created' ||
-          notification.type === 'deal_completed') {
-        // Navigate to My Jobs page where they can manage proposals and deals
-        navigate('/my-jobs');
+      // Navigate based on notification type and related data
+      if (notification.related_job_id) {
+        if (notification.type === 'proposal_received' || 
+            notification.type === 'proposal_accepted' || 
+            notification.type === 'proposal_rejected' ||
+            notification.type === 'deal_created' ||
+            notification.type === 'deal_completed' ||
+            notification.type === 'counter_proposal') {
+          navigate('/my-jobs');
+        }
       }
     }
   };
@@ -102,7 +111,7 @@ const NotificationCenter = () => {
   if (isLoading) {
     return (
       <Button variant="ghost" size="icon" disabled>
-        <Bell className="h-5 w-5" />
+        <BellIcon className="h-5 w-5 fill-current" />
       </Button>
     );
   }
@@ -111,7 +120,7 @@ const NotificationCenter = () => {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="icon" className="relative">
-          <Bell className="h-5 w-5" />
+          <BellIcon className="h-5 w-5 fill-current" />
           {unreadCount > 0 && (
             <Badge 
               variant="destructive" 
@@ -149,7 +158,7 @@ const NotificationCenter = () => {
               <DropdownMenuItem
                 key={notification.id}
                 className={`flex flex-col items-start p-3 cursor-pointer ${
-                  !notification.read ? 'bg-muted/50' : ''
+                  (!notification.read || (notification.count && notification.count > 0)) ? 'bg-muted/50' : ''
                 }`}
                 onClick={() => handleNotificationClick(notification)}
               >
@@ -157,7 +166,14 @@ const NotificationCenter = () => {
                   <div className="flex items-start space-x-2 flex-1">
                     <span className="text-lg">{getNotificationIcon(notification.type)}</span>
                     <div className="flex-1 min-w-0">
-                      <div className="font-medium text-sm">{notification.title}</div>
+                      <div className="font-medium text-sm flex items-center gap-2">
+                        {notification.title}
+                        {notification.count && notification.count > 1 && (
+                          <Badge variant="secondary" className="text-xs">
+                            {notification.count}
+                          </Badge>
+                        )}
+                      </div>
                       <div className="text-xs text-muted-foreground mt-1 break-words">
                         {notification.message}
                       </div>
@@ -167,7 +183,7 @@ const NotificationCenter = () => {
                       </div>
                     </div>
                   </div>
-                  {!notification.read && (
+                  {(!notification.read || (notification.count && notification.count > 0)) && (
                     <div className="h-2 w-2 bg-blue-500 rounded-full mt-1 flex-shrink-0" />
                   )}
                 </div>
